@@ -1,0 +1,88 @@
+1) In order to handle exceptions:
+- you have to propagate it to the write-back stage, where it will be handled. While the instruction passes through
+the intermediate stages it shouldn't be able to modify the microarchitectural state.
+- you need to stop propagating instructions through the pipeline as soon as the exception is detected
+(for ex. if it is detected in memory you should prevent the following instructions from reaching the memory stage).
+As a general rule we could stop propagation after the stage in which the exception is detected (included).
+2) In order to handle interrupts:
+- stop the fetch stage and wait for the pipeline to be emptied
+- handle the interrupt
+3) Branch resolution can be done in memory
+4) CSR circuitry can be located in decode, since the registers are accessed in the same way as normal registers, at 
+least during normal operation of the processor.
+5) the ISSR remains active until the pipeline is emptied, which means until the instruction which was in decode when
+the interrupt was raised reaches the write-back stage. The part of the core which is fed by the ISSR (the one at the
+bottom, including ISSR, EFR, ICCD and ISAG) has not to be included in the pipeline, since it manages the production
+of data related to async interrupts/exceptions: in both cases the condition that throws the event should be detected
+as soon as it is raised, but it has to be handled only when the instruction reaches write-back.
+5.1) Make sure the fetch is stopped when an exception is pending, while you have to allow the completion of all the
+instructions which located in stages that are after the one which raised the exception.
+6) when an interrupt is entered MSTATUS.XIE = 0, which means that interrupts of the same kind are disabled unless 
+the ISR re-writes this. All the values to be written in CSR registers are multiplexed on the CSRISL, which selects
+the value to be written in the CSR RF depending on which control signal is set among the selection ones. 
+7) Operations on the CSR values are done inside the CSRISL, so we should find a way to avoid the propagation of the
+value to the actual CSR register before the writeback stage. A possible way to solve this problem could be the one
+to relocate the CSRISL in writeback or to divide it in multiple units to be placed in different stages.
+8) Duplicate DARU to simulate an instruction memory separated from the one used to store data.
+9) Make the memory able to retrieve 16 bits per access, so that you can speed up the instruction fetch and data
+retrieval that is done during memory stage.
+10) Implement bypasses between write-back and decode.
+11) MULTIPORT MEMORY, SO THAT THERE ARE NO CONFLICTS BETWEEN GET_INSTR AND MEMORY STAGE. We need two DARUs to handle
+the two concurrent memory accesses.
+
+PIPELINE STRUCTURE:
+
+FETCH: PC, branch prediction (as in the DLX), next PC value computation
+
+GET_INSTR: IRAM access circuitry (DARU1), IR (pipeline)
+
+DECODE: ISSEU, RF, Register Bank, CSRC, CSRAD (these last two are only used during interrupts and exceptions
+processing, if we are able to divide the counting logic from the random access one we can place the first one in 
+writeback and the second one in decode), CSR_ADDR_CTRL
+
+EXECUTE: AAU, ASU, LLU, BSU, COMP
+
+MEMORY: DARU2, DAWU, SULU
+
+WRITEBACK: CSRISL (selection of CSR input), ISSR, EFR (updated when the event happens, not part of the pipeline), ICCD, ISAG
+
+INSTRUCTIONS AND CONDITIONS TO BE HANDLED IN SPECIAL WAYS:
+
+- exceptions (ecall): since it is not possible anymore to jump directly to fetch, it is necessary to keep the exception flag
+high until the exception is handled (at least until write-back). The same applies for interrupts, but they are kept
+high from the outside. In order to do that we could use a register as a flag, so that the register itself is cleared
+when the exception reaches write-back (in theory we need it high during write-back, we need to clear it in the cycle
+afterward). The register should be cleared also when there is a taken branch. For other exceptions we have to wait
+for the excepting instruction to reach write-back: when this happens then the instruction will be handled. If a taken
+branch traverses the memory stage before the excepting instruction reaches write-back we have to cancel the exception,
+because it happened in a fragment of code that shouldn't have been executed. 
+
+- ecall: in the current arch, this instruction simply sets an ecall_flags and terminates execution. The exception
+will be handled in the write-back stage that follows. If we want to implement it in a pipelined arch, we should make
+sure to stop the execution of the following instructions before handling the exception: this can be done by stalling
+the stages before the decode (when the ecall reaches decode) and allowing it to proceed to the write-back stage,
+handling the exception when this stage is reached. The exception handling phase will correspond to a sequence of
+cycles where the pipeline is stopped and the CSRs are updated. There is no need to have a multiport CSR for this
+instruction, because while the ecall is in write-back there will be no instruction in decode (since we stalled all
+the stages before decode). Since the ecall is not handled until it reaches the end of the pipeline, there is no need
+to make an hazard unit able to detect the ecall.
+
+- mret/uret: it currently consists in an update of some CS registers and of the PC. It is more or less equivalent to an
+unconditional branch, but it requires updating the CSR before branching. Because of that it could be necessary to
+relocate the branch resolution in write-back, making sure that if a branch is detected then the memory is not
+written by the instruction coming after the mret. A possible solution to this problem could be the one to block the
+earlier stages of the pipeline when mret is detected, thus avoiding to perform write operations on memory or registers.
+It could be possible to have multiple branch resolution stages: one in memory for the normal branches, one in wb for 
+the mret and uret. This instruction would not rely on the branch prediction, because the pipeline is simply stalled.
+Because of that, there is no need to have a multiport CS register file for this instruction either. As for the ecall
+there is no need to do an HU for this instruction, because the CSRs are accessed only during the write-back.
+
+- instruction for CSR manipulation: they consists in a manipulation of the value of one among the CSRs. These instructions
+require having a multiport CS register file, because there may be an instruction in write-back while there is another
+one of the same kind in decode: in particular we need a write port for write-back and a read port to be used in multiplexing
+by both decode and write-back (it is needed to use this port in write-back for ecall,mret and uret). There should be an
+hazard unit for these instructions, because we should make sure that the CS registers are updated before reading them in
+the decode stage. The hazard unit should distinguish between dependencies due to normal registers and CS registers.
+
+
+
