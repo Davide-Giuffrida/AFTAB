@@ -56,12 +56,16 @@ add wave -noupdate -group TEST -radix hexadecimal /aftab_testbench/core/datapath
 
 add wave -noupdate -group SYSTEM /aftab_testbench/clk          
 add wave -noupdate -group SYSTEM /aftab_testbench/rst          
-add wave -noupdate -group SYSTEM /aftab_testbench/memReady 
-add wave -noupdate -group SYSTEM /aftab_testbench/memRead 
+add wave -noupdate -group SYSTEM /aftab_testbench/memReady1 
+add wave -noupdate -group SYSTEM /aftab_testbench/memReady2 
+add wave -noupdate -group SYSTEM /aftab_testbench/memRead1 
+add wave -noupdate -group SYSTEM /aftab_testbench/memRead2 
 add wave -noupdate -group SYSTEM /aftab_testbench/memWrite     
-add wave -noupdate -group SYSTEM -radix hexadecimal /aftab_testbench/memAddr     
-add wave -noupdate -group SYSTEM -radix hexadecimal /aftab_testbench/dataBusIn
-add wave -noupdate -group SYSTEM -radix hexadecimal /aftab_testbench/dataBusOut     
+add wave -noupdate -group SYSTEM -radix hexadecimal /aftab_testbench/memAddr1     
+add wave -noupdate -group SYSTEM -radix hexadecimal /aftab_testbench/memAddr2     
+add wave -noupdate -group SYSTEM -radix hexadecimal /aftab_testbench/memDataIn2
+add wave -noupdate -group SYSTEM -radix hexadecimal /aftab_testbench/memDataOut1     
+add wave -noupdate -group SYSTEM -radix hexadecimal /aftab_testbench/memDataOut2     
 add wave -noupdate -group SYSTEM /aftab_testbench/log_en
 add wave -noupdate -group SYSTEM -radix hexadecimal /aftab_testbench/core/datapathAFTAB/inst
 add wave -noupdate -group SYSTEM -radix hexadecimal /aftab_testbench/core/datapathAFTAB/outPC
@@ -92,8 +96,13 @@ add wave -noupdate -group DIV /aftab_testbench/core/datapathAFTAB/aau/Division/*
 add wave -noupdate -group DIV /aftab_testbench/core/datapathAFTAB/aau/Division/unsignedDiv/ControllerDiv/pstate
 
 add wave -noupdate -group DAWU /aftab_testbench/core/datapathAFTAB/dawu/*
+add wave -noupdate -group DAWU /aftab_testbench/core/datapathAFTAB/dawu/Controller/*
 
-add wave -noupdate -group DARU /aftab_testbench/core/datapathAFTAB/daru/*
+add wave -noupdate -group DARU /aftab_testbench/core/datapathAFTAB/daru1/*
+add wave -noupdate -group DARU /aftab_testbench/core/datapathAFTAB/daru1/Datapath/*
+add wave -noupdate -group DARU /aftab_testbench/core/datapathAFTAB/daru1/Controller/*
+add wave -noupdate -group DARU /aftab_testbench/core/datapathAFTAB/daru2/*
+add wave -noupdate -group DARU /aftab_testbench/core/datapathAFTAB/daru2/Controller/*
 
 add wave -noupdate -group SULU /aftab_testbench/core/datapathAFTAB/sulu/*
 

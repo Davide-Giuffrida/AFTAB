@@ -44,6 +44,7 @@ ENTITY aftab_divider_controller IS
 	PORT (
 		clk        : IN  STD_LOGIC;
 		rst        : IN  STD_LOGIC;
+		sync_rst   : IN  STD_LOGIC;
 		startDiv   : IN  STD_LOGIC;
 		R33        : IN  STD_LOGIC;
 		doneDiv    : OUT STD_LOGIC;
@@ -168,7 +169,11 @@ BEGIN
 		IF (rst = '1') THEN
 			pstate <= idle_state;
 		ELSIF (clk = '1' AND clk'event) THEN
-			pstate <= nstate;
+			IF (sync_rst = '1') THEN
+				pstate <= idle_state;
+			ELSE
+				pstate <= nstate;
+			END IF;
 		END IF;
 	END PROCESS;
 END ARCHITECTURE behavioral;

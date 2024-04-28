@@ -43,6 +43,7 @@ ENTITY aftab_su_divider IS
 	(
 		clk               : IN  STD_LOGIC;
 		rst               : IN  STD_LOGIC;
+		sync_rst		  : IN 	STD_LOGIC;
 		startSDiv         : IN  STD_LOGIC;
 		SignedUnsignedbar : IN  STD_LOGIC;
 		dividend          : IN  STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
@@ -96,6 +97,7 @@ BEGIN
 		MAP (
 		clk       => clk,
 		rst       => rst,
+		sync_rst  => sync_rst,
 		startDiv  => safeStart,
 		doneDiv   => doneSDiv,
 		dividend  => ddIn,

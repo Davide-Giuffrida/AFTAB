@@ -47,6 +47,7 @@ ENTITY aftab_booth_multiplier_controller IS
 	(
 		clk        : IN  STD_LOGIC;
 		rst        : IN  STD_LOGIC;
+		sync_rst   : IN  STD_LOGIC;
 		startBooth : IN  STD_LOGIC;
 		shrMr      : OUT STD_LOGIC;
 		ldMr       : OUT STD_LOGIC;
@@ -149,7 +150,11 @@ BEGIN
 		IF rst = '1' THEN
 			pstate <= Idle;
 		ELSIF (clk = '1' AND clk'event) THEN
-			pstate <= nstate;
+			IF (sync_rst = '1') THEN 
+				pstate <= Idle;
+			ELSE
+				pstate <= nstate;
+			END IF;
 		END IF;
 	END PROCESS sequential;
 	

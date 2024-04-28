@@ -69,7 +69,7 @@ TARGET_C_FLAGS="-O0"
 # ZERO_RV32E=0
 
 # GCC_MARCH="RV32IM"
-GCC_MARCH="rv32im"
+GCC_MARCH="rv32im_zicsr"
 # #compile arduino lib
 # ARDUINO_LIB=0
 

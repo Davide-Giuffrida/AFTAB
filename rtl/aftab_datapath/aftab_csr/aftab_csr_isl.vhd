@@ -92,7 +92,7 @@ BEGIN
 		(outCSR(31 DOWNTO 8) & '0' & outCSR(6 DOWNTO 4) & '1' & outCSR(2 DOWNTO 0)) WHEN machineStatusAlterationPostCSR = '1' ELSE
 		(outCSR(31 DOWNTO 5) & '0' & outCSR(3 DOWNTO 1) & '1') WHEN userStatusAlterationPostCSR = '1' ELSE
 		(OTHERS => '0');
-	inCSR <= (preInCSR AND X"00000011") WHEN (mirrorUser = '1' AND mirrorUstatus = '1')ELSE
+	inCSR <= (preInCSR AND X"00000011") WHEN (mirrorUser = '1' AND mirrorUstatus = '1') ELSE
 		(preInCSR AND X"00000111") WHEN (mirrorUser = '1' AND (mirrorUie = '1' OR mirrorUip = '1')) ELSE preInCSR;
 	previousPRV <= outCSR(12 DOWNTO 11);
 END ARCHITECTURE behavioral;

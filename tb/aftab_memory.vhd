@@ -34,6 +34,8 @@
 --
 -- **************************************************************************************
 
+-- TODO: ADD THE CIRCUITRY TO PERFORM A READ OPERATION OVER A SINGLE BYTE (FILL THE MSB WITH 0s).
+
 LIBRARY IEEE;
 LIBRARY STD;
 USE IEEE.STD_LOGIC_1164.ALL;
@@ -44,7 +46,7 @@ USE STD.TEXTIO.ALL;
 
 ENTITY aftab_memory IS
 	GENERIC (
-		dataWidth      : INTEGER := 8;
+		dataWidth      : INTEGER := 16;
 		addressWidth   : INTEGER := 32;
 		actual_address : INTEGER := 13;
 		size           : INTEGER := 2**actual_address -- 2^12 for data and 2^12 for instr, 4 K each
@@ -52,19 +54,25 @@ ENTITY aftab_memory IS
 	PORT (
 		clk           : IN  STD_LOGIC;
 		rst           : IN  STD_LOGIC;
-		readMem       : IN  STD_LOGIC;
-		writeMem      : IN  STD_LOGIC;
-		addressBus    : IN  STD_LOGIC_VECTOR (addressWidth - 1 DOWNTO 0);
-		dataIn     	  : IN  STD_LOGIC_VECTOR (dataWidth - 1 DOWNTO 0);
-		dataOut       : OUT STD_LOGIC_VECTOR (dataWidth - 1 DOWNTO 0);
-		log_en 		  : IN STD_LOGIC;
-		ready  		  : OUT STD_LOGIC
+		readMem1      : IN  STD_LOGIC;
+		readMem2      : IN  STD_LOGIC;
+		writeMem2     : IN  STD_LOGIC;
+		addressBus1   : IN  STD_LOGIC_VECTOR (addressWidth - 1 DOWNTO 0);
+		addressBus2   : IN  STD_LOGIC_VECTOR (addressWidth - 1 DOWNTO 0);
+		dataIn2       : IN  STD_LOGIC_VECTOR (dataWidth - 1 DOWNTO 0);
+		dataOut1      : OUT STD_LOGIC_VECTOR (dataWidth - 1 DOWNTO 0);
+		dataOut2      : OUT STD_LOGIC_VECTOR (dataWidth - 1 DOWNTO 0);
+		log_en 		  : IN 	STD_LOGIC;
+		ready1  	  : OUT STD_LOGIC; -- for the first port (used only to read instructions)
+		ready2  	  : OUT STD_LOGIC; -- for the second port (both for reading/writing data)
+		bytesPort1	  : IN STD_LOGIC;
+		bytesPort2    : IN STD_LOGIC
 	);
 END aftab_memory;
 
 ARCHITECTURE behavioral OF aftab_memory IS
 
-	TYPE mem_type IS ARRAY (0 TO size - 1) OF STD_LOGIC_VECTOR (dataWidth-1 DOWNTO 0);
+	TYPE mem_type IS ARRAY (0 TO size - 1) OF STD_LOGIC_VECTOR (7 DOWNTO 0);
 	SIGNAL mem : MEM_TYPE;
 
 	-- Memory boundaries - change this according to the linker script: sw/ref/link.common.ld
@@ -79,7 +87,7 @@ ARCHITECTURE behavioral OF aftab_memory IS
 	
 BEGIN
 
-RW : PROCESS(rst, clk, writeMem, readMem, addressBus, log_en)
+RW : PROCESS(rst, clk, writeMem2, readMem1, readMem2, addressBus1, addressBus2, log_en)
 
 		VARIABLE adr                 : STD_LOGIC_VECTOR(actual_address-1 DOWNTO 0);
 		VARIABLE memline             : LINE;
@@ -94,9 +102,14 @@ RW : PROCESS(rst, clk, writeMem, readMem, addressBus, log_en)
 
 	BEGIN
 
+		dataOut1 <= (OTHERS => 'Z');
+		dataOut2 <= (OTHERS => 'Z');
+
 		IF rst = '1' THEN
-			dataOut <= (OTHERS => 'Z');
-			ready <= '1';
+			dataOut1 <= (OTHERS => 'Z');
+			dataOut2 <= (OTHERS => 'Z');
+			ready1 <= '1';
+			ready2 <= '1';
 			-- Load memory content from file
 			mem <= (OTHERS => (OTHERS => '0'));
 			FILE_OPEN(err_check, f, ("./slm_files/spi_stim.txt"), READ_MODE);
@@ -117,9 +130,11 @@ RW : PROCESS(rst, clk, writeMem, readMem, addressBus, log_en)
 					mem(TO_INTEGER(UNSIGNED(adr) + 3)) <= read_data(31 DOWNTO 24);
 				END LOOP;
 				FILE_CLOSE (f);
-			END IF;
-		
-		ELSIF log_en = '1' THEN
+			ELSE
+				assert 0=1 report "non existent file" severity failure;
+			end if;
+		END IF;
+		IF log_en = '1' THEN
 
 			FILE_OPEN(err_check, f_log, ("./slm_files/dram_dump.txt"), WRITE_MODE);
 			index:=base_dram;
@@ -132,27 +147,49 @@ RW : PROCESS(rst, clk, writeMem, readMem, addressBus, log_en)
 			END LOOP;
 
 			FILE_CLOSE (f_log);
-
-			
-		ELSIF  readMem = '1' THEN
-		
-			IF UNSIGNED(addressBus) > end_iram THEN 
-				adr := '1' & addressBus(actual_address-2 DOWNTO 0);
-			ELSE
-				adr := '0' & addressBus(actual_address-2 DOWNTO 0);
+		END IF;	
+		IF (readMem1 = '1' OR readMem2 = '1') THEN
+			-- reading for DARU1
+			IF (readMem1 = '1') THEN
+				IF UNSIGNED(addressBus1) > end_iram THEN -- data address
+					adr := '1' & addressBus1(actual_address-2 DOWNTO 0);
+				ELSE -- instruction address
+					adr := '0' & addressBus1(actual_address-2 DOWNTO 0);
+				END IF;
+				dataOut1(7 DOWNTO 0)  <= mem(TO_INTEGER(UNSIGNED(adr)));
+				-- read another byte only if the reading op has to be performed over 2 bytes
+				IF (bytesPort1 = '1') THEN
+					dataOut1(15 DOWNTO 8) <= mem(TO_INTEGER(UNSIGNED(adr)) + 1);
+				ELSE
+					dataOut1(15 DOWNTO 8) <= (OTHERS => '0');
+				END IF;
 			END IF;
-			dataOut <= mem(TO_INTEGER(UNSIGNED(adr)));
-
-		ELSIF writeMem = '1' and falling_edge(clk) THEN
-			IF UNSIGNED(addressBus) > end_iram THEN 
-				adr := '1' & addressBus(actual_address-2 DOWNTO 0);
-				mem(TO_INTEGER(UNSIGNED(adr))) <= dataIn;
+			-- reading for DARU2
+			IF (readMem2 = '1') THEN
+				IF UNSIGNED(addressBus2) > end_iram THEN -- data address
+					adr := '1' & addressBus2(actual_address-2 DOWNTO 0);
+				ELSE -- instruction address
+					adr := '0' & addressBus2(actual_address-2 DOWNTO 0);
+				END IF;
+				dataOut2(7 DOWNTO 0)  <= mem(TO_INTEGER(UNSIGNED(adr)));
+				-- read another byte only if the reading op has to be performed over 2 bytes
+				IF (bytesPort2 = '1') THEN
+					dataOut2(15 DOWNTO 8) <= mem(TO_INTEGER(UNSIGNED(adr)) + 1);
+				ELSE
+					dataOut2(15 DOWNTO 8) <= (OTHERS => '0');
+				END IF;
+			END IF;
+		END IF;
+		IF writeMem2 = '1' and falling_edge(clk) THEN
+			IF UNSIGNED(addressBus2) > end_iram THEN 
+				adr := '1' & addressBus2(actual_address-2 DOWNTO 0);
+				mem(TO_INTEGER(UNSIGNED(adr))) <= dataIn2(7 DOWNTO 0);
+				-- write another byte only if the reading op has to be performed over 2 bytes
+				IF (bytesPort1 = '1') THEN
+					mem(TO_INTEGER(UNSIGNED(adr)) + 1) <= dataIn2(15 DOWNTO 8);
+				END IF;
 			END IF;
 			-- writing on instruction portion is inhibited
-
-		ELSE
-			dataOut <= (OTHERS => 'Z');
-			
 		END IF;
 	
 	END PROCESS;

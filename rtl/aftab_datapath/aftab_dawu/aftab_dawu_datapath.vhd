@@ -62,21 +62,23 @@ ENTITY aftab_dawu_datapath IS
 		checkMisalignedDAWU : IN  STD_LOGIC;
 		storeMisalignedFlag : OUT STD_LOGIC;
 		coCnt               : OUT STD_LOGIC;
-		dataOut             : OUT STD_LOGIC_VECTOR (7 DOWNTO 0);
-		addrOut             : OUT STD_LOGIC_VECTOR (len - 1 DOWNTO 0)
+		dataOut             : OUT STD_LOGIC_VECTOR (15 DOWNTO 0);
+		addrOut             : OUT STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
+		bytesToWrite		: OUT STD_LOGIC
 	);
 END ENTITY aftab_dawu_datapath;
 --
 ARCHITECTURE Behavioral OF aftab_dawu_datapath IS
-	SIGNAL muxOut     : STD_LOGIC_VECTOR (7 DOWNTO 0);
-	SIGNAL outReg0    : STD_LOGIC_VECTOR (7 DOWNTO 0);
-	SIGNAL outReg1    : STD_LOGIC_VECTOR (7 DOWNTO 0);
-	SIGNAL outReg2    : STD_LOGIC_VECTOR (7 DOWNTO 0);
-	SIGNAL outReg3    : STD_LOGIC_VECTOR (7 DOWNTO 0);
+	SIGNAL muxOut     : STD_LOGIC_VECTOR (15 DOWNTO 0);
+	SIGNAL outReg0    : STD_LOGIC_VECTOR (15 DOWNTO 0);
+	SIGNAL outReg1    : STD_LOGIC_VECTOR (15 DOWNTO 0);
 	SIGNAL addrOutReg : STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
 	SIGNAL writeAddr  : STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
 	SIGNAL nBytesOut  : STD_LOGIC_VECTOR (1 DOWNTO 0);
-	SIGNAL outCnt     : STD_LOGIC_VECTOR (1 DOWNTO 0);
+	SIGNAL outCnt     : STD_LOGIC_VECTOR (0 DOWNTO 0);
+	SIGNAL byteCnt     : STD_LOGIC_VECTOR (1 DOWNTO 0);
+	SIGNAL outCnt_ext : STD_LOGIC_VECTOR (1 DOWNTO 0);
+	SIGNAL bytesToWrite_temp : STD_LOGIC;
 BEGIN
 	--Register Part
 	nBytesReg : ENTITY WORK.aftab_register
@@ -90,6 +92,9 @@ BEGIN
 			load   => ldNumBytes,
 			inReg  => nBytesIn,
 			outReg => nBytesOut);
+		
+	bytesToWrite_temp <= '0' when nBytesOut="00" else '1';
+	bytesToWrite <= bytesToWrite_temp;
 	addrReg : ENTITY WORK.aftab_register
 		GENERIC
 		MAP(len => len)
@@ -103,52 +108,35 @@ BEGIN
 		outReg => addrOutReg);
 	reg0 : ENTITY WORK.aftab_register
 		GENERIC
-		MAP(len => 8)
+		MAP(len => 16)
 		PORT
 		MAP(
 		clk    => clk,
 		rst    => rst,
 		zero   => zeroData,
 		load   => ldData,
-		inReg  => dataIn (7 DOWNTO 0),
+		inReg  => dataIn (15 DOWNTO 0),
 		outReg => outReg0);
 	reg1 : ENTITY WORK.aftab_register
 		GENERIC
-		MAP(len => 8)
+		MAP(len => 16)
 		PORT
 		MAP(
 		clk    => clk,
 		rst    => rst,
 		zero   => zeroData,
 		load   => ldData,
-		inReg  => dataIn (15 DOWNTO 8),
+		inReg  => dataIn (31 DOWNTO 16),
 		outReg => outReg1);
-	reg2 : ENTITY WORK.aftab_register
-		GENERIC
-		MAP(len => 8)
-		PORT
-		MAP(
-		clk    => clk,
-		rst    => rst,
-		zero   => zeroData,
-		load   => ldData,
-		inReg  => dataIn (23 DOWNTO 16),
-		outReg => outReg2);
-	reg3 : ENTITY WORK.aftab_register
-		GENERIC
-		MAP(len => 8)
-		PORT
-		MAP(
-		clk    => clk,
-		rst    => rst,
-		zero   => zeroData,
-		load   => ldData,
-		inReg  => dataIn(31 DOWNTO 24),
-		outReg => outReg3);
+
+	-- outcnt extended
+	outCnt_ext <= '0' & outCnt;
+	byteCnt <= outCnt & '0';
+
 	--Counter Part
 	Counter : ENTITY WORK.aftab_counter
 		GENERIC
-		MAP(len => 2)
+		MAP(len => 1)
 		PORT
 		MAP(
 		clk       => clk,
@@ -156,21 +144,19 @@ BEGIN
 		zeroCnt   => zeroCnt,
 		incCnt    => incCnt,
 		initCnt   => initCnt,
-		initValue => initValueCnt,
+		initValue => initValueCnt(0 DOWNTO 0),
 		outCnt    => outCnt,
 		coCnt     => OPEN);
-	muxOut <= outReg0 WHEN outCnt = "00" ELSE
-		outReg1 WHEN outCnt = "01" ELSE
-		outReg2 WHEN outCnt = "10" ELSE
-		outReg3 WHEN outCnt = "11";
-	coCnt <= '1' WHEN (outCnt = nBytesOut) ELSE '0';
+	muxOut <= outReg0 WHEN outCnt(0) = '0' ELSE
+		outReg1 WHEN outCnt(0) = '1';
+	coCnt <= '1' WHEN (outCnt(0) = bytesToWrite_temp) ELSE '0';
 	Adder : ENTITY WORK.aftab_opt_adder
 		GENERIC
 		MAP(len => 32)
 		PORT
 		MAP(
 		A   => addrOutReg,
-		B   => outCnt,
+		B   => byteCnt,
 		Sum => writeAddr);
 	errorDecoder : ENTITY work.aftab_dawu_error_detector
 		GENERIC

@@ -45,6 +45,7 @@ ENTITY aftab_dawu IS
 	(
 		clk                 : IN  STD_LOGIC;
 		rst                 : IN  STD_LOGIC;
+		sync_rst			: IN  STD_LOGIC;
 		startDAWU           : IN  STD_LOGIC;
 		memReady            : IN  STD_LOGIC;
 		nBytes              : IN  STD_LOGIC_VECTOR (1 DOWNTO 0);
@@ -52,10 +53,11 @@ ENTITY aftab_dawu IS
 		dataIn              : IN  STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
 		checkMisalignedDAWU : IN  STD_LOGIC;
 		addrOut             : OUT STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
-		dataOut             : OUT STD_LOGIC_VECTOR (7 DOWNTO 0);
+		dataOut             : OUT STD_LOGIC_VECTOR (15 DOWNTO 0);
 		storeMisalignedFlag : OUT STD_LOGIC;
 		writeMem            : OUT STD_LOGIC;
-		completeDAWU        : OUT STD_LOGIC
+		completeDAWU        : OUT STD_LOGIC;
+		bytesToWrite		: OUT STD_LOGIC
 	);
 END ENTITY aftab_dawu;
 --
@@ -98,12 +100,14 @@ BEGIN
 			storeMisalignedFlag => storeMisalignedFlag,
 			coCnt               => coCnt,
 			dataOut             => dataOut,
-			addrOut             => addrOut);
+			addrOut             => addrOut,
+			bytesToWrite		=> bytesToWrite);
 	Controller : ENTITY WORK.aftab_dawu_controller
 		PORT
 	MAP(
 	clk          => clk,
 	rst          => rst,
+	sync_rst 	 => sync_rst,
 	coCnt        => coCnt,
 	startDAWU    => startDAWU,
 	memReady     => memReady,

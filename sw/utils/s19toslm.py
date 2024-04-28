@@ -46,7 +46,7 @@ import math
 # Function to dump single bytes of a string to a file
 ###############################################################################
 def dump_bytes( filetoprint, addr, data_s):
-    for i in xrange(0,4,1):
+    for i in range(0,4,1):
         filetoprint.write("@%08X %s\n" % ( addr+i,  data_s[i*2:(i+1)*2] ))
 
 ###############################################################################
@@ -115,7 +115,7 @@ def bytes_to_words(byte_dict, word_dict):
 # Start of file
 ###############################################################################
 if(len(sys.argv) < 2):
-    print "Usage s19toslm.py FILENAME"
+    print ("Usage s19toslm.py FILENAME")
     quit()
 
 
@@ -214,15 +214,15 @@ l2_blocks   = (l2_size/1024+1)
 tcdm_blocks = (tcdm_size/1024+1)
 header_size = 8<<2
 
-l2_off_s    = "%08X"%(((tcdm_size+8)/1024 + 1)*1024 <<2)
+l2_off_s    = "%08X"%(((tcdm_size+8) + 1024) <<2)
 l2_start_s  = "%08X"%(l2_start << 2)
 l2_size_s   = "%08X"%(l2_size << 2)
-l2_blocks_s = "%08X"%(l2_blocks)
+l2_blocks_s = "%08X"%(int(l2_blocks))
 
 tcdm_off_s    = "%08X"%(header_size)
 tcdm_start_s  = "%08X"%(tcdm_start << 2)
 tcdm_size_s   = "%08X"%(tcdm_size << 2)
-tcdm_blocks_s = "%08X"%(tcdm_blocks)
+tcdm_blocks_s = "%08X"%(int(tcdm_blocks))
 
 
 # write header
@@ -242,7 +242,7 @@ for addr in sorted(slm_dict.keys()):
     # l2 address range
     if(addr >= l2_start and addr <= l2_end):
         l2_base = (addr - l2_start)
-        l2_addr = l2_base  + ((tcdm_size+8)/1024+1)*1024
+        l2_addr = l2_base  + ((tcdm_size+8)+1024)
         dump_bytes(flash, l2_addr * 4, data)
 
     # tcdm address range

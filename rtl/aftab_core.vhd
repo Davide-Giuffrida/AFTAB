@@ -43,12 +43,18 @@ ENTITY aftab_core IS
 	(
 		clk                      : IN  STD_LOGIC;
 		rst                      : IN  STD_LOGIC;
-		memReady       	         : IN  STD_LOGIC;
-		memDataIn                : IN  STD_LOGIC_VECTOR (7 DOWNTO 0);
-		memDataOut               : OUT STD_LOGIC_VECTOR (7 DOWNTO 0);
-		memRead                  : OUT STD_LOGIC;
+		memReady1       	     : IN  STD_LOGIC;
+		memReady2       	     : IN  STD_LOGIC;
+		memDataOut1              : IN  STD_LOGIC_VECTOR (15 DOWNTO 0);
+		memDataOut2              : IN STD_LOGIC_VECTOR (15 DOWNTO 0);
+		memDataIn2               : OUT STD_LOGIC_VECTOR (15 DOWNTO 0);
+		memRead1                 : OUT STD_LOGIC;
+		memRead2                 : OUT STD_LOGIC;
 		memWrite                 : OUT STD_LOGIC;
-		memAddr                  : OUT STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
+		memAddr1                 : OUT STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
+		memAddr2                 : OUT STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
+		bytesPort1				 : OUT STD_LOGIC;
+		bytesPort2				 : OUT STD_LOGIC;
 		--interrupt inputs and outputs
 		machineExternalInterrupt : IN  STD_LOGIC;
 		machineTimerInterrupt    : IN  STD_LOGIC;
@@ -171,39 +177,71 @@ ARCHITECTURE procedural OF aftab_core IS
 	SIGNAL ldMieUieField                  : STD_LOGIC;
 	SIGNAL selMedeleg_CSR                 : STD_LOGIC;
 	SIGNAL selMideleg_CSR                 : STD_LOGIC;
+	SIGNAL setZeroOrOne					  : STD_LOGIC;
+	SIGNAL writeRB_inst					  : STD_LOGIC;
+	SIGNAL forced_RB_read				  : STD_LOGIC;
+	SIGNAL inst_type					  : STD_LOGIC_VECTOR (2 DOWNTO 0);
+	SIGNAL ret_from_epc					  : STD_LOGIC;
+	SIGNAL selALU						  : STD_LOGIC;
+	SIGNAL selPC4						  : STD_LOGIC;
+	SIGNAL selMem						  : STD_LOGIC;
+	SIGNAL cmp_selALUop2				  : STD_LOGIC;
+	SIGNAL cmp_selop2					  : STD_LOGIC;
+	SIGNAL isCSRInstruction				  : STD_LOGIC;
+	SIGNAL WB_func3						  : STD_LOGIC_VECTOR (2 DOWNTO 0);
+	SIGNAL completedDAWU				  : STD_LOGIC;
+	SIGNAL completedDARU1				  : STD_LOGIC;
+	SIGNAL completedDARU2				  : STD_LOGIC;
+	SIGNAL completedAAU					  : STD_LOGIC;
+	SIGNAL is_AAU_used					  : STD_LOGIC;
+	SIGNAL instructionDone				  : STD_LOGIC;
+	SIGNAL hazard_solved				  : STD_LOGIC;
+	SIGNAL is_store_in_mem				  : STD_LOGIC;
+	SIGNAL is_load_in_mem				  : STD_LOGIC;
+	SIGNAL branch_taken					  : STD_LOGIC;
+	SIGNAL DEC_valid					  : STD_LOGIC;
+	SIGNAL EX_valid						  : STD_LOGIC;
+	SIGNAL M_valid						  : STD_LOGIC;
+	SIGNAL WB_valid						  : STD_LOGIC;
+	SIGNAL WB_ret_from_epc				  : STD_LOGIC;
+	SIGNAL CSR_from_WB					  : STD_LOGIC;
+	SIGNAL sel_Tval_CSR					  : STD_LOGIC;
+	SIGNAL mirrorUserCU					  : STD_LOGIC;
+	SIGNAL instructionDoneCSR			  : STD_LOGIC;
+	SIGNAL GI2D_en						  : STD_LOGIC;	
+	SIGNAL GI2D_rst						  : STD_LOGIC;	
+	SIGNAL D2E_en						  : STD_LOGIC;	
+	SIGNAL D2E_rst						  : STD_LOGIC;	
+	SIGNAL E2M_en						  : STD_LOGIC;	
+	SIGNAL E2M_rst						  : STD_LOGIC;	
+	SIGNAL M2WB_en						  : STD_LOGIC;	
+	SIGNAL M2WB_rst						  : STD_LOGIC;
+	SIGNAL hazEX						  : STD_LOGIC;	
+	SIGNAL hazM							  : STD_LOGIC;	
+	SIGNAL WB_isCSRInstruction			  : STD_LOGIC;
+	SIGNAL WB_validAccessCSR			  : STD_LOGIC;
+
 BEGIN
 	datapathAFTAB : ENTITY WORK.aftab_datapath
 		PORT MAP
 		(
+			-- general signals
 			clk                            => clk,
 			rst                            => rst,
+
+			-- control word
 			writeRegFile                   => writeRegFile,
-			setOne                         => setOne,
-			setZero                        => setZero,
+			setZeroOrOne                   => setZeroOrOne,
 			ComparedSignedUnsignedBar      => ComparedSignedUnsignedBar,
 			selPC                          => selPC,
-			selI4                          => selI4,
-			selAdd                         => selAdd,
 			selJL                          => selJL,
-			selADR                         => selADR,
-			selPCJ                         => selPCJ,
-			selInc4pc                      => selInc4pc,
 			selBSU                         => selBSU,
 			selLLU                         => selLLU,
 			selASU                         => selASU,
 			selAAU                         => selAAU,
-			selDARU                        => selDARU,
 			selP1                          => selP1,
 			selP2                          => selP2,
 			selImm                         => selImm,
-			ldPC                           => ldPC,
-			zeroPC                         => '0',
-			ldADR                          => ldADR,
-			zeroADR                        => '0',
-			ldDR                           => ldDR,
-			zeroDR                         => '0',
-			ldIR                           => ldIR,
-			zeroIR                         => '0',
 			ldByteSigned                   => ldByteSigned,
 			ldHalfSigned                   => ldHalfSigned,
 			load                           => load,
@@ -214,7 +252,7 @@ BEGIN
 			muxCode                        => muxCode,
 			selLogic                       => selLogic,
 			startDAWU                      => startDAWU,
-			startDARU                      => startDARU,
+			startDARU                 	   => startDARU,
 			startMultiplyAAU               => startMultiplyAAU,
 			startDivideAAU                 => startDivideAAU,
 			signedSigned                   => signedSigned,
@@ -222,23 +260,62 @@ BEGIN
 			unsignedUnsigned               => unsignedUnsigned,
 			selAAL                         => selAAL,
 			selAAH                         => selAAH,
-			dataInstrBar                   => dataInstrBar,
-			completeAAU                    => completeAAU,
 			nBytes                         => nBytes,
-			memReady                       => memReady,
-			memDataIn                      => memDataIn,
-			memDataOut                     => memDataOut,
-			memAddrDAWU                    => memAddr,
-			memAddrDARU                    => memAddr,
-			writeMem                       => memWrite,
-			readMem                        => memRead,
-			IR                             => IR,
-			lt                             => lt,
-			eq                             => eq,
-			gt                             => gt,
-			completeDAWU                   => completeDAWU,
-			completeDARU                   => completeDARU,
 			selCSR                         => selCSR,
+			writeRB_inst				   => writeRB_inst, -- TODO: to be removed
+			checkMisalignedDAWU            => checkMisalignedDAWU,
+			selCSRAddrFromInst             => selCSRAddrFromInst,
+			forced_RB_read				   => forced_RB_read, -- mux selection signal between the address to be read from write-back (as exception handling) and the one to be read in decode
+			inst_type					   => inst_type,
+			ret_from_epc				   => ret_from_epc,
+			selALU						   => selALU,
+			selPC4						   => selPC4,
+			selMem						   => selMem,
+			cmp_selALUop2				   => cmp_selALUop2,
+			cmp_selop2				   	   => cmp_selop2,
+			isCSRInstruction			   => isCSRInstruction,
+
+			-- memory signals
+			writeMemDAWU                   => memWrite,
+			readMemDARU1                   => memRead1,
+			readMemDARU2                   => memRead2,
+			memReady1                      => memReady1,  -- for the two read ports (one for GI and one for MEM)
+			memReady2                      => memReady2,
+			memDataOut1                    => memDataOut1, -- data read from the first read port
+			memDataOut2                    => memDataOut2,
+			dataDAWU                       => memDataIn2,
+			memAddr1                       => memAddr1,
+			memAddr2                       => memAddr2,
+			bytesToReadDARU1			   => bytesPort1, -- for the first memory port (accessed only from GI stage)
+			bytesPerMemAccess			   => bytesPort2, -- for the second memory port
+			
+			-- instruction to be decoded
+			IR                             => IR, -- used to send to the CU the instruction to be decoded
+			
+			-- func3 field of the instruction currently in write-back
+			WB_func3					   => WB_func3,
+
+			-- operation complete signals (and related signals to notify the CU about the instruction which reside in the pipeline)
+			completedDAWU_def              => completedDAWU,
+			completedDARU1_def             => completedDARU1,
+			completedDARU2_def             => completedDARU2,
+			completedAAU                   => completedAAU,
+			is_AAU_used					   => is_AAU_used,
+			instructionDone				   => instructionDone,
+			hazard_solved 				   => hazard_solved,
+			is_store_in_mem				   => is_store_in_mem,
+			is_load_in_mem				   => is_load_in_mem,
+			branch_taken 				   => branch_taken,
+			DEC_valid					   => DEC_valid,
+			EX_valid					   => EX_valid,
+			M_valid						   => M_valid,
+			WB_valid					   => WB_valid,
+			WB_ret_from_epc				   => WB_ret_from_epc,
+			WB_isCSRInstruction			   => WB_isCSRInstruction,
+			WB_validAccessCSR			   => WB_validAccessCSR,
+
+			--CSR and Interrupt inputs and outputs --> driven directly by the CU when needed
+			CSR_from_WB					   => CSR_from_WB,
 			machineExternalInterrupt       => machineExternalInterrupt,
 			machineTimerInterrupt          => machineTimerInterrupt,
 			machineSoftwareInterrupt       => machineSoftwareInterrupt,
@@ -248,13 +325,8 @@ BEGIN
 			platformInterruptSignals       => platformInterruptSignals,
 			ldValueCSR                     => ldValueCSR,
 			mipCCLdDisable                 => mipCCLdDisable,
-			selImmCSR                      => selImmCSR,
-			selP1CSR                       => selP1CSR,
-			selReadWriteCSR                => selReadWriteCSR,
-			clrCSR                         => clrCSR,
-			setCSR                         => setCSR,
 			selPC_CSR                      => selPC_CSR,
-			selTval_CSR                    => selTval_CSR,
+			selTval_CSR                    => sel_Tval_CSR,
 			selMedeleg_CSR                 => selMedeleg_CSR,
 			selMideleg_CSR                 => selMideleg_CSR,
 			selCCMip_CSR                   => selCCMip_CSR,
@@ -262,33 +334,25 @@ BEGIN
 			selMepc_CSR                    => selMepc_CSR,
 			selInterruptAddressDirect      => selInterruptAddressDirect,
 			selInterruptAddressVectored    => selInterruptAddressVectored,
-			writeRegBank                   => writeRegBank,
+			writeRegBank                   => writeRegBank, -- driven directly by the CU, the actual write enable signal is writeRegBank OR write_RB_inst
 			dnCntCSR                       => dnCntCSR,
 			upCntCSR                       => upCntCSR,
 			ldCntCSR                       => ldCntCSR,
 			zeroCntCSR                     => zeroCntCSR,
-			ldFlags                        => ldFlags,
-			zeroFlags                      => zeroFlags,
 			ldDelegation                   => ldDelegation,
 			ldMachine                      => ldMachine,
 			ldUser                         => ldUser,
 			loadMieReg                     => loadMieReg,
 			loadMieUieField                => loadMieUieField,
-			mirrorUser                     => mirrorUser,
+			mirrorUserCU                   => mirrorUserCU,
 			machineStatusAlterationPreCSR  => machineStatusAlterationPreCSR,
 			userStatusAlterationPreCSR     => userStatusAlterationPreCSR,
 			machineStatusAlterationPostCSR => machineStatusAlterationPostCSR,
 			userStatusAlterationPostCSR    => userStatusAlterationPostCSR,
-			checkMisalignedDARU            => checkMisalignedDARU,
-			checkMisalignedDAWU            => checkMisalignedDAWU,
-			selCSRAddrFromInst             => selCSRAddrFromInst,
 			selRomAddress                  => selRomAddress,
-			ecallFlag                      => ecallFlag,
+			ecallFlag                      => ecallFlag, -- set by the CU when an ecall is in decode
 			illegalInstrFlag               => illegalInstrFlag,
-			instrMisalignedOut             => instrMisalignedOut,
-			loadMisalignedOut              => OPEN,
-			storeMisalignedOut             => OPEN,
-			dividedByZeroOut               => dividedByZeroOut,
+			instructionDoneCSR			   => instructionDoneCSR,
 			validAccessCSR                 => validAccessCSR,
 			readOnlyCSR                    => readOnlyCSR,
 			mirror                         => mirror,
@@ -298,117 +362,165 @@ BEGIN
 			exceptionRaise                 => exceptionRaise,
 			delegationMode                 => delegationMode,
 			previousPRV                    => previousPRV,
-			modeTvec                       => modeTvec
+			modeTvec                       => modeTvec,
+			selP1CSR                       => selP1CSR,
+			selImmCSR                      => selImmCSR,
+			setCSR                         => setCSR,
+			selReadWriteCSR                => selReadWriteCSR,
+			clrCSR                         => clrCSR,
+
+			-- pipeline registers
+			GI2D_en						   => GI2D_en,
+			GI2D_rst					   => GI2D_rst,
+			D2E_en						   => D2E_en,
+			D2E_rst					       => D2E_rst,
+			E2M_en						   => E2M_en,
+			E2M_rst						   => E2M_rst,
+			M2WB_en						   => M2WB_en,
+			M2WB_rst					   => M2WB_rst,
+
+			-- hazards
+			hazEX						   => hazEX,
+			hazM						   => hazM
 		);
 	controllerAFTAB : ENTITY WORK.aftab_controller
-		PORT
-	MAP(
-	clk                            => clk,
-	rst                            => rst,
-	completeDARU                   => completeDARU,
-	completeDAWU                   => completeDAWU,
-	completeAAU                    => completeAAU,
-	lt                             => lt,
-	eq                             => eq,
-	gt                             => gt,
-	IR                             => IR,
-	muxCode                        => muxCode,
-	nBytes                         => nBytes,
-	selLogic                       => selLogic,
-	selShift                       => selShift,
-	selPC                          => selPC,
-	selI4                          => selI4,
-	selP1                          => selP1,
-	selP2                          => selP2,
-	selJL                          => selJL,
-	selADR                         => selADR,
-	selPCJ                         => selPCJ,
-	selImm                         => selImm,
-	selAdd                         => selAdd,
-	selInc4PC                      => selInc4PC,
-	selBSU                         => selBSU,
-	selLLU                         => selLLU,
-	selASU                         => selASU,
-	selAAU                         => selAAU,
-	selDARU                        => selDARU,
-	dataInstrBar                   => dataInstrBar,
-	writeRegFile                   => writeRegFile,
-	addSubBar                      => addSubBar,
-	pass                           => pass,
-	selAuipc                       => selAuipc,
-	comparedsignedunsignedbar      => comparedsignedunsignedbar,
-	ldIR                           => ldIR,
-	ldADR                          => ldADR,
-	ldPC                           => ldPC,
-	ldDr                           => ldDr,
-	ldByteSigned                   => ldByteSigned,
-	ldHalfSigned                   => ldHalfSigned,
-	load                           => load,
-	setOne                         => setOne,
-	setZero                        => setZero,
-	startDARU                      => startDARU,
-	startDAWU                      => startDAWU,
-	startMultiplyAAU               => startMultiplyAAU,
-	startDivideAAU                 => startDivideAAU,
-	signedSigned                   => signedSigned,
-	signedUnsigned                 => signedUnsigned,
-	unsignedUnsigned               => unsignedUnsigned,
-	selAAL                         => selAAL,
-	selAAH                         => selAAH,
-	interruptRaise                 => interruptRaise,
-	exceptionRaise                 => exceptionRaise,
-	ecallFlag                      => ecallFlag,
-	illegalInstrFlag               => illegalInstrFlag,
-	instrMisalignedOut             => instrMisalignedOut,
-	loadMisalignedOut              => '0',
-	storeMisalignedOut             => '0',
-	dividedByZeroOut               => dividedByZeroOut,
-	validAccessCSR                 => validAccessCSR,
-	readOnlyCSR                    => readOnlyCSR,
-	mirror                         => mirror,
-	ldMieReg                       => ldMieReg,
-	ldMieUieField                  => ldMieUieField,
-	delegationMode                 => delegationMode,
-	previousPRV                    => previousPRV,
-	modeTvec                       => modeTvec,
-	mipCCLdDisable                 => mipCCLdDisable,
-	selCCMip_CSR                   => selCCMip_CSR,
-	selCause_CSR                   => selCause_CSR,
-	selPC_CSR                      => selPC_CSR,
-	selTval_CSR                    => selTval_CSR,
-	selMedeleg_CSR                 => selMedeleg_CSR,
-	selMideleg_CSR                 => selMideleg_CSR,
-	ldValueCSR                     => ldValueCSR,
-	ldCntCSR                       => ldCntCSR,
-	dnCntCSR                       => dnCntCSR,
-	upCntCSR                       => upCntCSR,
-	ldFlags                        => ldFlags,
-	zeroFlags                      => zeroFlags,
-	ldDelegation                   => ldDelegation,
-	ldMachine                      => ldMachine,
-	ldUser                         => ldUser,
-	loadMieReg                     => loadMieReg,
-	loadMieUieField                => loadMieUieField,
-	mirrorUser                     => mirrorUser,
-	selCSR                         => selCSR,
-	selP1CSR                       => selP1CSR,
-	selReadWriteCSR                => selReadWriteCSR,
-	selImmCSR                      => selImmCSR,
-	setCSR                         => setCSR,
-	clrCSR                         => clrCSR,
-	writeRegBank                   => writeRegBank,
-	selCSRAddrFromInst             => selCSRAddrFromInst,
-	selRomAddress                  => selRomAddress,
-	selMepc_CSR                    => selMepc_CSR,
-	selInterruptAddressDirect      => selInterruptAddressDirect,
-	selInterruptAddressVectored    => selInterruptAddressVectored,
-	checkMisalignedDARU            => checkMisalignedDARU,
-	checkMisalignedDAWU            => checkMisalignedDAWU,
-	machineStatusAlterationPreCSR  => machineStatusAlterationPreCSR,
-	userStatusAlterationPreCSR     => userStatusAlterationPreCSR,
-	machineStatusAlterationPostCSR => machineStatusAlterationPostCSR,
-	userStatusAlterationPostCSR    => userStatusAlterationPostCSR,
-	zeroCntCSR                     => zeroCntCSR
+		PORT MAP(
+			-- general signals
+			clk                            => clk,
+			rst                            => rst,
+
+			-- operation complete signals
+			completedDAWU                  => completedDAWU,
+			completedDARU1                 => completedDARU1,
+			completedDARU2                 => completedDARU2,
+			completedAAU                   => completedAAU,
+			is_AAU_used					   => is_AAU_used,
+			instructionDone				   => instructionDone,
+			hazard_solved 				   => hazard_solved,
+			is_store_in_mem				   => is_store_in_mem,
+			is_load_in_mem				   => is_load_in_mem,
+			branch_taken 				   => branch_taken,
+			DEC_valid					   => DEC_valid,
+			EX_valid					   => EX_valid,
+			M_valid						   => M_valid,
+			WB_valid					   => WB_valid,
+			WB_ret_from_epc				   => WB_ret_from_epc,
+			WB_isCSRInstruction			   => WB_isCSRInstruction,
+			WB_validAccessCSR			   => WB_validAccessCSR,
+
+			-- instruction to be decoded
+			IR                             => IR,
+
+			-- func3 field of the instruction currently in write-back (needed for CSR instructions)
+			WB_func3					   => WB_func3,
+			
+			-- control word
+			writeRegFile                   => writeRegFile,
+			setZeroOrOne                   => setZeroOrOne,
+			ComparedSignedUnsignedBar      => ComparedSignedUnsignedBar,
+			selPC                          => selPC,
+			selJL                          => selJL,
+			selBSU                         => selBSU,
+			selLLU                         => selLLU,
+			selASU                         => selASU,
+			selAAU                         => selAAU,
+			selP1                          => selP1,
+			selP2                          => selP2,
+			selImm                         => selImm,
+			ldByteSigned                   => ldByteSigned,
+			ldHalfSigned                   => ldHalfSigned,
+			load                           => load,
+			selShift                       => selShift,
+			addSubBar                      => addSubBar,
+			pass                           => pass,
+			selAuipc                       => selAuipc,
+			muxCode                        => muxCode,
+			selLogic                       => selLogic,
+			startDAWU                      => startDAWU,
+			startDARU                 	   => startDARU,
+			startMultiplyAAU               => startMultiplyAAU,
+			startDivideAAU                 => startDivideAAU,
+			signedSigned                   => signedSigned,
+			signedUnsigned                 => signedUnsigned,
+			unsignedUnsigned               => unsignedUnsigned,
+			selAAL                         => selAAL,
+			selAAH                         => selAAH,
+			nBytes                         => nBytes,
+			selCSR                         => selCSR,
+			selImmCSR                      => selImmCSR,
+			selP1CSR                       => selP1CSR,
+			selReadWriteCSR                => selReadWriteCSR,
+			clrCSR                         => clrCSR,
+			setCSR                         => setCSR,
+			writeRB_inst				   => writeRB_inst, -- the signal which has to be set to perform a write op over the RB
+			checkMisalignedDAWU            => checkMisalignedDAWU,
+			selCSRAddrFromInst             => selCSRAddrFromInst,
+			forced_RB_read				   => forced_RB_read, -- mux selection signal between the address to be read from write-back (as exception handling) and the one to be read in decode
+			inst_type					   => inst_type,
+			ret_from_epc				   => ret_from_epc,
+			selALU						   => selALU,
+			selPC4						   => selPC4,
+			selMem						   => selMem,
+			cmp_selALUop2				   => cmp_selALUop2,
+			cmp_selop2				   	   => cmp_selop2,
+			isCSRInstruction			   => isCSRInstruction,
+
+			-- Interrupts
+			CSR_from_WB					   => CSR_from_WB,
+			interruptRaise                 => interruptRaise,
+			exceptionRaise                 => exceptionRaise,
+			ecallFlag                      => ecallFlag,
+			illegalInstrFlag               => illegalInstrFlag,
+			validAccessCSR                 => validAccessCSR,
+			readOnlyCSR                    => readOnlyCSR,
+			mirror                         => mirror,
+			ldMieReg                       => ldMieReg,
+			ldMieUieField                  => ldMieUieField,
+			delegationMode                 => delegationMode,
+			previousPRV                    => previousPRV,
+			modeTvec                       => modeTvec,
+			mipCCLdDisable                 => mipCCLdDisable,
+			selCCMip_CSR                   => selCCMip_CSR,
+			selCause_CSR                   => selCause_CSR,
+			selPC_CSR                      => selPC_CSR,
+			selTval_CSR                    => selTval_CSR,
+			selMedeleg_CSR                 => selMedeleg_CSR,
+			selMideleg_CSR                 => selMideleg_CSR,
+			ldValueCSR                     => ldValueCSR,
+			ldCntCSR                       => ldCntCSR,
+			dnCntCSR                       => dnCntCSR,
+			upCntCSR                       => upCntCSR,
+			ldDelegation                   => ldDelegation,
+			ldMachine                      => ldMachine,
+			ldUser                         => ldUser,
+			loadMieReg                     => loadMieReg,
+			loadMieUieField                => loadMieUieField,
+			mirrorUserCU                   => mirrorUserCU,
+			writeRegBank                   => writeRegBank,
+			selRomAddress                  => selRomAddress,
+			selMepc_CSR                    => selMepc_CSR,
+			selInterruptAddressDirect      => selInterruptAddressDirect,
+			selInterruptAddressVectored    => selInterruptAddressVectored,
+			machineStatusAlterationPreCSR  => machineStatusAlterationPreCSR,
+			userStatusAlterationPreCSR     => userStatusAlterationPreCSR,
+			machineStatusAlterationPostCSR => machineStatusAlterationPostCSR,
+			userStatusAlterationPostCSR    => userStatusAlterationPostCSR,
+			zeroCntCSR                     => zeroCntCSR,
+			instructionDoneCSR			   => instructionDoneCSR,
+
+			-- pipeline registers
+			GI2D_en						   => GI2D_en,
+			GI2D_rst					   => GI2D_rst,
+			D2E_en						   => D2E_en,
+			D2E_rst					       => D2E_rst,
+			E2M_en						   => E2M_en,
+			E2M_rst						   => E2M_rst,
+			M2WB_en						   => M2WB_en,
+			M2WB_rst					   => M2WB_rst,
+
+			-- hazards
+			hazEX						   => hazEX,
+			hazM						   => hazM
 	);
 	interruptProcessing <= mipCCLdDisable;
 END ARCHITECTURE procedural;

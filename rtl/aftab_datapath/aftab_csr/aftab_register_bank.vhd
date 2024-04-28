@@ -46,7 +46,8 @@ ENTITY aftab_register_bank IS
 		rst              : IN  STD_LOGIC;
 		writeRegBank     : IN  STD_LOGIC;
 		addressRegBank   : IN  STD_LOGIC_VECTOR (11 DOWNTO 0);
-		inputRegBank     : IN  STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
+		writeAddressRegBank: IN STD_LOGIC_VECTOR (11 DOWNTO 0);
+		inputRegBank     : IN  STD_LOGIC_VECTOR (len - 1 DOWNTO 0); -- inCSR
 		loadMieReg       : IN  STD_LOGIC;
 		loadMieUieField  : IN  STD_LOGIC;
 		outRegBank       : OUT STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
@@ -63,7 +64,8 @@ ENTITY aftab_register_bank IS
 END ENTITY aftab_register_bank;
 --
 ARCHITECTURE behavioral OF aftab_register_bank IS
-SIGNAL translatedAddress : STD_LOGIC_VECTOR (4 DOWNTO 0);
+	SIGNAL translatedAddress : STD_LOGIC_VECTOR (4 DOWNTO 0);
+	SIGNAL translatedWriteAddress : STD_LOGIC_VECTOR (4 DOWNTO 0);
 BEGIN
 	CSR_registers : ENTITY work.aftab_csr_registers
 		GENERIC
@@ -74,22 +76,29 @@ BEGIN
 			rst            => rst,
 			writeRegBank   => writeRegBank,
 			addressRegBank => translatedAddress,
+			writeAddressRegBank => translatedWriteAddress,
 			inputRegBank   => inputRegBank,
 			outRegBank     => outRegBank
 		);
+
+	-- eliminate bits which are always 0/1 in the addresses of the registers which have been implemented
 	translatedAddress <= addressRegBank(8) & addressRegBank(6) & addressRegBank(2) &
 						 addressRegBank(1) & addressRegBank(0);
+	translatedWriteAddress <= writeAddressRegBank(8) & writeAddressRegBank(6) & writeAddressRegBank(2) &
+						 writeAddressRegBank(1) & writeAddressRegBank(0);
+	
+	-- logic to determine if the access has to be mirrored (only for the write access)
 	CSR_address_logic : ENTITY work.aftab_csr_address_logic PORT
 		MAP(
-		addressRegBank => addressRegBank,
+		addressRegBank => writeAddressRegBank,
 		ldMieReg       => ldMieReg,
 		ldMieUieField  => ldMieUieField,
 		mirrorUstatus  => mirrorUstatus,
 		mirrorUie      => mirrorUie,
 		mirrorUip      => mirrorUip,
 		mirror         => mirror
-		);	
-
+		);
+			
 	mieCCregister : ENTITY work.aftab_register
 		GENERIC
 		MAP(len => 32)

@@ -43,6 +43,7 @@ ENTITY aftab_booth_multiplier IS
 	(
 	   clk        : IN  STD_LOGIC;
 	   rst        : IN  STD_LOGIC;
+	   sync_rst	  : IN  STD_LOGIC;
 	   startBooth : IN  STD_LOGIC;
 	   M          : IN  STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
 	   Mr         : IN  STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
@@ -86,6 +87,7 @@ BEGIN
 		MAP(
 		clk        => clk,
 		rst        => rst,
+		sync_rst   => sync_rst,
 		startBooth => startBooth,
 		shrMr      => shrMr,
 		ldMr       => ldMr,

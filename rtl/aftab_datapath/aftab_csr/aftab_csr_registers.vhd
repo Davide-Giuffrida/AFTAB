@@ -46,6 +46,7 @@ ENTITY aftab_csr_registers IS
 		rst            : IN STD_LOGIC;
 		writeRegBank   : IN STD_LOGIC; 
 		addressRegBank : IN STD_LOGIC_VECTOR  (4 DOWNTO 0);
+		writeAddressRegBank: IN STD_LOGIC_VECTOR (4 DOWNTO 0);
 		inputRegBank   : IN STD_LOGIC_VECTOR  (len - 1 DOWNTO 0);
 		outRegBank     : OUT STD_LOGIC_VECTOR (len - 1 DOWNTO 0)
 	);
@@ -59,6 +60,10 @@ ARCHITECTURE behavioral OF aftab_csr_registers IS
 	ATTRIBUTE ramstyle OF rData : SIGNAL IS "M9K";
  
 BEGIN
+	
+	-- asynchronous read statement
+	outRegBank <= rData(to_integer (unsigned(addressRegBank)));
+	
 	wrProc : PROCESS (clk, rst)
 	-- wrProc : PROCESS (clk)
 	BEGIN
@@ -66,9 +71,8 @@ BEGIN
 			rData <= (OTHERS => (OTHERS => '0'));
 		ELSIF (clk = '1' AND clk'EVENT) THEN
 			IF (writeRegBank = '1') THEN
-				rData(to_integer(unsigned(addressRegBank))) <= inputRegBank;
+				rData(to_integer(unsigned(writeAddressRegBank))) <= inputRegBank;
 			END IF;
-			outRegBank <= rData(to_integer (unsigned(addressRegBank)));
 		END IF;
 	END PROCESS;
 END ARCHITECTURE behavioral;

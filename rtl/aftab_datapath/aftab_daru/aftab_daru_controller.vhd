@@ -41,6 +41,8 @@ ENTITY aftab_daru_controller IS
 	(
 		clk          : IN  STD_LOGIC;
 		rst          : IN  STD_LOGIC;
+		sync_rst	 : IN  STD_LOGIC;
+		dataInstrBar : IN  STD_LOGIC;
 		startDARU    : IN  STD_LOGIC;
 		coCnt        : IN  STD_LOGIC;
 		memReady     : IN  STD_LOGIC;
@@ -64,7 +66,7 @@ ARCHITECTURE behavioral OF aftab_daru_controller IS
 	TYPE state IS (waitforStart, waitforMemready, complete);
 	SIGNAL pstate, nstate : state;
 BEGIN
-	PROCESS (pstate, startDARU, coCnt, memReady) BEGIN
+	PROCESS (pstate, startDARU, coCnt, memReady, dataInstrBar) BEGIN
 		nstate <= waitforStart;
 		CASE pstate IS
 			WHEN waitforStart =>
@@ -80,7 +82,15 @@ BEGIN
 					nstate <= waitforMemready;
 				END IF;
 			WHEN complete =>
-				nstate <= waitforStart;
+				-- you restart the DARU immediately only if the DARU fetches instructions, otherwise
+				-- you would restart fetching the same data you have just finished fetching!
+				IF (startDARU = '1' AND dataInstrBar = '0') THEN
+					nstate <= waitforMemready;
+				ELSIF (dataInstrBar = '1') THEN -- DARU2 (for data)
+					nstate <= complete;
+				ELSE
+					nstate <= waitforStart;
+				END IF;
 			WHEN OTHERS =>
 				nstate <= waitforStart;
 		END CASE;
@@ -113,6 +123,13 @@ BEGIN
 				incCnt     <= memReady;
 			WHEN complete =>
 				completeDARU <= '1';
+				-- in case you have to pass directly to the waitforMemReady
+				IF (startDARU = '1' AND dataInstrBar = '0') THEN
+					initCnt     <= startDARU;
+					ldAddr      <= startDARU;
+					ldNumBytes  <= startDARU;
+					initReading <= startDARU;
+				END IF;
 			WHEN OTHERS =>
 				initCnt      <= '0';
 				ldAddr       <= '0';
@@ -134,7 +151,11 @@ BEGIN
 		IF (rst = '1') THEN
 			pstate <= waitforStart;
 		ELSIF (clk = '1' AND clk'event) THEN
-			pstate <= nstate;
+			IF (sync_rst = '1') THEN
+				pstate <= waitforStart;
+			ELSE
+				pstate <= nstate;
+			END IF;
 		END IF;
 	END PROCESS;
 END ARCHITECTURE behavioral;

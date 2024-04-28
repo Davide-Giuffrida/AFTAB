@@ -44,6 +44,7 @@ ENTITY aftab_aau IS
 	(
 		clk               : IN  STD_LOGIC;
 		rst               : IN  STD_LOGIC;
+		sync_rst		  : IN  STD_LOGIC;
 		ain               : IN  STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
 		bin               : IN  STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
 		startMultAAU      : IN  STD_LOGIC;
@@ -82,6 +83,7 @@ BEGIN
 		(
 			clk        => clk,
 			rst        => rst,
+			sync_rst   => sync_rst,
 			startBooth => startMultAAU,
 			M          => in1Mult,
 			Mr         => in2Mult,
@@ -97,6 +99,7 @@ BEGIN
 		PORT
 		MAP(clk           => clk,
 		rst               => rst,
+		sync_rst		  => sync_rst,
 		startSDiv         => startDivideAAU,
 		signedUnsignedbar => signedUnsignedbarDiv,
 		dividend          => ain,

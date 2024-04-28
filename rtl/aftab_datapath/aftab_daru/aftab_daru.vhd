@@ -41,10 +41,11 @@ ENTITY aftab_daru IS
 	(
 		clk                 : IN  STD_LOGIC;
 		rst                 : IN  STD_LOGIC;
+		sync_rst			: IN  STD_LOGIC;
 		startDARU           : IN  STD_LOGIC;
 		nBytes              : IN  STD_LOGIC_VECTOR(1 DOWNTO 0);
 		addrIn              : IN  STD_LOGIC_VECTOR (31 DOWNTO 0);
-		memData             : IN  STD_LOGIC_VECTOR (7 DOWNTO 0);
+		memData             : IN  STD_LOGIC_VECTOR (15 DOWNTO 0);
 		memReady            : IN  STD_LOGIC;
 		dataInstrBar        : IN  STD_LOGIC;
 		checkMisalignedDARU : IN  STD_LOGIC;
@@ -53,7 +54,9 @@ ENTITY aftab_daru IS
 		completeDARU        : OUT STD_LOGIC;
 		dataOut             : OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
 		addrOut             : OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
-		readMem             : OUT STD_LOGIC
+		readAddrOut			: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
+		readMem             : OUT STD_LOGIC;
+		bytesToRead			: OUT STD_LOGIC
 	);
 END ENTITY aftab_daru;
 --
@@ -71,7 +74,7 @@ ARCHITECTURE behavioral OF aftab_daru IS
 	SIGNAL enableData   : STD_LOGIC;
 	SIGNAL coCnt        : STD_LOGIC;
 	SIGNAL sel          : STD_LOGIC_VECTOR (1 DOWNTO 0);
-	SIGNAL initValueCnt : STD_LOGIC_VECTOR (1 DOWNTO 0);
+	SIGNAL initValueCnt : STD_LOGIC;
 BEGIN
 	DataPath : ENTITY work.aftab_daru_datapath
 		GENERIC
@@ -101,12 +104,16 @@ BEGIN
 			loadMisalignedFlag  => loadMisalignedFlag,
 			coCnt               => coCnt,
 			dataOut             => dataOut,
-			addrOut             => addrOut);
+			addrOut             => addrOut,
+			readAddrOut			=> readAddrOut,
+			bytesToRead 		=> bytesToRead);
 	Controller : ENTITY work.aftab_daru_controller
 		PORT
 	MAP(
 	clk          => clk,
 	rst          => rst,
+	sync_rst 	 => sync_rst,
+	dataInstrBar => dataInstrBar,
 	startDARU    => startDARU,
 	coCnt        => coCnt,
 	memReady     => memReady,

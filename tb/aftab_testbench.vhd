@@ -45,8 +45,9 @@ ARCHITECTURE behavior OF aftab_testbench IS
 	-- Core inputs
 	SIGNAL clk                      : STD_LOGIC := '0';
 	SIGNAL rst                      : STD_LOGIC := '0';
-	SIGNAL memReady                 : STD_LOGIC := '0';
-	SIGNAL dataBusIn                : STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => 'Z');
+	SIGNAL memReady1                : STD_LOGIC := '0';
+	SIGNAL memReady2                : STD_LOGIC := '0';
+	SIGNAL memDataIn2               : STD_LOGIC_VECTOR(15 DOWNTO 0) := (OTHERS => 'Z');
 	SIGNAL platformInterruptSignals : STD_LOGIC_VECTOR(15 DOWNTO 0) := (OTHERS => '0');
 	SIGNAL machineExternalInterrupt : STD_LOGIC := '0';
 	SIGNAL machineTimerInterrupt    : STD_LOGIC := '0';
@@ -56,11 +57,16 @@ ARCHITECTURE behavior OF aftab_testbench IS
 	SIGNAL userSoftwareInterrupt    : STD_LOGIC := '0';
 
 	-- Core outputs
-	SIGNAL memRead             : STD_LOGIC;
+	SIGNAL memRead1            : STD_LOGIC;
+	SIGNAL memRead2            : STD_LOGIC;
 	SIGNAL memWrite            : STD_LOGIC;
 	SIGNAL interruptProcessing : STD_LOGIC;
-	SIGNAL memAddr             : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => 'Z');
-	SIGNAL dataBusOut          : STD_LOGIC_VECTOR(7 DOWNTO 0) := (OTHERS => 'Z');
+	SIGNAL memAddr1            : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => 'Z');
+	SIGNAL memAddr2            : STD_LOGIC_VECTOR(31 DOWNTO 0) := (OTHERS => 'Z');
+	SIGNAL memDataOut1         : STD_LOGIC_VECTOR(15 DOWNTO 0) := (OTHERS => 'Z');
+	SIGNAL memDataOut2         : STD_LOGIC_VECTOR(15 DOWNTO 0) := (OTHERS => 'Z');
+	SIGNAL bytesPort1		   : STD_LOGIC;
+	SIGNAL bytesPort2		   : STD_LOGIC;
  
 
 	SIGNAL log_en : STD_LOGIC := '0'; -- this signal is set up by run.tcl at the end of the simulation to dump memory
@@ -72,15 +78,21 @@ BEGIN
 	-- Instantiate the Unit Under Test (UUT)
 	core : ENTITY WORK.aftab_core
 		PORT MAP(
-			clk        => clk, 
-			rst        => rst, 
-			memRead    => memRead, 
-			memWrite   => memWrite, 
-			memDataIn  => dataBusIn, 
-			memDataOut => dataBusOut, 
-			memAddr    => memAddr, 
-			memReady   => memReady, 
-			----
+			clk                      => clk,
+			rst                      => rst,
+			memReady1       	     => memReady1,
+			memReady2       	     => memReady2,
+			memDataOut1              => memDataOut1,
+			memDataOut2              => memDataOut2,
+			memDataIn2               => memDataIn2,
+			memRead1                 => memRead1,
+			memRead2                 => memRead2,
+			memWrite                 => memWrite,
+			memAddr1                 => memAddr1,
+			memAddr2                 => memAddr2,
+			bytesPort1				 => bytesPort1,
+			bytesPort2				 => bytesPort2,
+
 			machineExternalInterrupt => machineExternalInterrupt, 
 			machineTimerInterrupt    => machineTimerInterrupt,   
 			machineSoftwareInterrupt => machineSoftwareInterrupt, 
@@ -90,18 +102,24 @@ BEGIN
 			platformInterruptSignals => platformInterruptSignals, 
 			interruptProcessing      => interruptProcessing
 		);
-			--
+	
 	memory : ENTITY WORK.aftab_memory
 		PORT MAP(
-			clk          => clk,
-			rst          => rst, 
-			readMem      => memRead, 
-			writeMem     => memWrite, 
-			addressBus   => memAddr, 
-			dataIn       => dataBusOut, 
-			dataOut      => dataBusIn, 
-			log_en       => log_en, 
-			ready 	     => memReady
+			clk           			 => clk,
+			rst           			 => rst,
+			readMem1      			 => memRead1,
+			readMem2     			 => memRead2,
+			writeMem2     			 => memWrite,
+			addressBus1				 => memAddr1,
+			addressBus2				 => memAddr2,
+			dataIn2       			 => memDataIn2,
+			dataOut1      			 => memDataOut1,
+			dataOut2      			 => memDataOut2,
+			log_en 		  			 => log_en,
+			ready1  	  			 => memReady1, -- for the first port (used only to read instructions)
+			ready2  	 			 => memReady2, -- for the second port (both for reading/writing data)
+			bytesPort1				 => '1',
+			bytesPort2				 => bytesPort2
 		);
 
 	clk_process : PROCESS

@@ -84,6 +84,9 @@ echo "${Green}--> Compiling ${IP_NAME}... ${NC}"
 echo "${Green}Compiling component: ${Brown} generics ${NC}"
 echo "${NC}"
 
+# compile the file with type definitions
+vcom -2008 -work work ${RTL_PATH}/constants.vhd  || goto error
+
 vcom -2008 -work work ${RTL_PATH}/aftab_datapath/aftab_register.vhd  || goto error
 vcom -2008 -work work ${RTL_PATH}/aftab_datapath/aftab_multiplexer.vhd  || goto error
 vcom -2008 -work work ${RTL_PATH}/aftab_datapath/aftab_comparator.vhd   || goto error

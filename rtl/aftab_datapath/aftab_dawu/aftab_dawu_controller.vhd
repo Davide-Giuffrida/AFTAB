@@ -41,6 +41,7 @@ ENTITY aftab_dawu_controller IS
 	(
 		clk          : IN  STD_LOGIC;
 		rst          : IN  STD_LOGIC;
+		sync_rst 	 : IN  STD_LOGIC;
 		coCnt        : IN  STD_LOGIC;
 		startDAWU    : IN  STD_LOGIC;
 		memReady     : IN  STD_LOGIC;
@@ -146,7 +147,11 @@ BEGIN
 		IF (rst = '1') THEN
 			pstate <= waitForStart;
 		ELSIF (clk = '1' AND clk'EVENT) THEN
-			pstate <= nstate;
+			IF (sync_rst = '1') THEN
+				pstate <= waitForStart;
+			ELSE
+				pstate <= nstate;
+			END IF;
 		END IF;
 	END PROCESS sequential;
 END ARCHITECTURE behavioral;
