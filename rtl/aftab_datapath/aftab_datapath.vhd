@@ -36,6 +36,8 @@
 
 -- STRUCTURAL MODIFICATIONS NEEDED: ------------------
 
+-- TODO: J TYPE INSTRUCTIONS ALWAYS HAVE AN OPERAND! --> FIX HAZARD AND BYPASS DETECTION
+
 -- TODO: FIX DARU AND DAWU TO MAKE SURE DATA ARE NOT DELETED DURING OPERATION AND THE FSM IS NOT
 -- RESTARTED WHEN DATA ARE STALLED INSIDE THE MEMORY STAGE.
 
@@ -694,7 +696,8 @@ BEGIN
 
 	-- ldPC is given by the pipeline enabled signal, but if there are mispredictions on branches you have to clear F2GI
 	-- GI2D_rst is raised when there are mispredictions, exceptions or interrupts
-	ldPC <= (DARU1_en AND NOT(GI2D_rst_def)) OR GI2D_rst;
+	-- FIXME: REPLACED DARU1_en with DARU1_en_def
+	ldPC <= (DARU1_en_def AND NOT(GI2D_rst_def)) OR GI2D_rst;
 
 	-- PC register
 	regPC : ENTITY WORK.aftab_register
@@ -1000,7 +1003,12 @@ BEGIN
 			bypass_first_operand_en <= '0';
 			bypass_second_operand_en <= '0';
 		ELSIF (inst_type = J_type) THEN -- unconditional branches
-			bypass_first_operand_en <= '0';
+			IF (selPC = '1') THEN -- JAL, it uses PC as first operand
+				bypass_first_operand_en <= '0';
+			ELSE -- JALR
+				bypass_first_operand_en <= '1';
+				bypass_first_operand <= GI2D_instr_curr(19 DOWNTO 15);
+			END IF;
 			bypass_second_operand_en <= '0';
 		END IF;
 
@@ -1527,8 +1535,8 @@ BEGIN
 	-- storeMisalignedOut <= '0'; --not used
 	-- dividedByZeroOut   <= dividedByZeroFlag;
 	
-	interruptRaise <= interruptRaiseTemp;
-	exceptionRaise <= exceptionRaiseTemp;
+	-- interruptRaise <= interruptRaiseTemp;
+	-- exceptionRaise <= exceptionRaiseTemp;
 	
 	causeCodeTemp <= causeCode(31) & causeCode (4 DOWNTO 0);
 
@@ -1628,7 +1636,12 @@ BEGIN
 			hazEX_first_operand_en <= '0';
 			hazEX_second_operand_en <= '0';
 		ELSIF (inst_type = J_type) THEN -- unconditional branches
-			hazEX_first_operand_en <= '0';
+			IF (selPC = '1') THEN -- JAL, it uses PC as first operand
+				hazEX_first_operand_en <= '0';
+			ELSE -- JALR
+				hazEX_first_operand_en <= '1';
+				hazEX_first_operand <= GI2D_instr_curr(19 DOWNTO 15);
+			END IF;
 			hazEX_second_operand_en <= '0';
 		END IF;
 
@@ -1680,7 +1693,7 @@ BEGIN
 		IF (D2E_ex_flag_next = '0' AND hazEX_first_operand = hazEX_result AND hazEX_first_operand_en = '1' AND hazEX_result_en = '1' AND hazEX_zero_first_operand = '0') THEN
 			hazEX <= '1';
 		-- comparison between second operand and result (considering also a comparison between a CSR result and a CSR second operand)
-		ELSIF (D2E_ex_flag_next = '1' AND ((hazEX_second_operand = hazEX_result AND hazEX_second_operand_en = '1' AND hazEX_result_en = '1' AND hazEX_zero_second_operand = '0')
+		ELSIF (D2E_ex_flag_next = '0' AND ((hazEX_second_operand = hazEX_result AND hazEX_second_operand_en = '1' AND hazEX_result_en = '1' AND hazEX_zero_second_operand = '0')
 			OR (((hazEX_CSR_mirror = '0' AND hazEX_CSR_second_operand = hazEX_CSR_result) OR (hazEX_CSR_mirror = '1' AND hazEX_CSR_second_operand(7 DOWNTO 0) = hazEX_CSR_result (7 DOWNTO 0))) AND hazEX_CSR_second_operand_en = '1' AND hazEX_CSR_result_en = '1' ))) THEN
 			hazEX <= '1';
 		END IF;
@@ -1740,7 +1753,12 @@ BEGIN
 			hazM_first_operand_en <= '0';
 			hazM_second_operand_en <= '0';
 		ELSIF (inst_type = J_type) THEN -- unconditional branches
-			hazM_first_operand_en <= '0';
+			IF (selPC = '1') THEN -- JAL, it uses PC as first operand
+				hazM_first_operand_en <= '0';
+			ELSE -- JALR
+				hazM_first_operand_en <= '1';
+				hazM_first_operand <= GI2D_instr_curr(19 DOWNTO 15);
+			END IF;
 			hazM_second_operand_en <= '0';
 		END IF;
 
@@ -2105,7 +2123,7 @@ BEGIN
 		IF (rst = '1') THEN
 			EH_state_curr <= no_ex;
 		ELSIF (rising_edge(clk)) THEN
-			IF(GI2D_rst = '1') THEN
+			IF(M2WB_rst = '1') THEN
 				EH_state_curr <= no_ex;
 			ELSE
 				EH_state_curr <= EH_state_next;

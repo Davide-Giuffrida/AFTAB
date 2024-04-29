@@ -48,6 +48,7 @@ ENTITY aftab_daru_datapath IS
 		initValueCnt        : IN  STD_LOGIC_VECTOR (1 DOWNTO 0);
 		addrIn              : IN  STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
 		memData             : IN  STD_LOGIC_VECTOR ((len/2) - 1 DOWNTO 0);
+		select_incoming_data: IN  STD_LOGIC;
 		zeroAddr            : IN  STD_LOGIC;
 		ldAddr              : IN  STD_LOGIC;
 		selldEn             : IN  STD_LOGIC;
@@ -80,6 +81,7 @@ ARCHITECTURE behavioral OF aftab_daru_datapath IS
 	SIGNAL outCnt_ext : STD_LOGIC_VECTOR (1 DOWNTO 0);
 	SIGNAL nBytesOut  : STD_LOGIC_VECTOR (1 DOWNTO 0);
 	SIGNAL outDecoder : STD_LOGIC_VECTOR (3 DOWNTO 0);
+	SIGNAL dataOutHigh_reg : STD_LOGIC_VECTOR (15 DOWNTO 0);
 	SIGNAL bytesToRead_temp : STD_LOGIC;
 BEGIN
 	dataIn <= memData WHEN enableData = '1' ELSE (OTHERS => 'Z');
@@ -159,7 +161,10 @@ BEGIN
 		zero   => initReading,
 		load   => outDecoder (1),
 		inReg  => dataIn,
-		outReg => dataOut (31 DOWNTO 16));
+		outReg => dataOutHigh_reg);
+
+	-- mux to select either the data coming from register or the one read from memory
+	dataOut (31 DOWNTO 16) <= dataIn WHEN select_incoming_data = '1' ELSE dataOutHigh_reg;
 	Adder : ENTITY WORK.aftab_opt_adder
 		GENERIC
 		MAP(len => 32)

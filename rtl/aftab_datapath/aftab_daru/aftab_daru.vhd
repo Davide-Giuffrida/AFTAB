@@ -75,6 +75,7 @@ ARCHITECTURE behavioral OF aftab_daru IS
 	SIGNAL coCnt        : STD_LOGIC;
 	SIGNAL sel          : STD_LOGIC_VECTOR (1 DOWNTO 0);
 	SIGNAL initValueCnt : STD_LOGIC;
+	SIGNAL select_incoming_data : STD_LOGIC;
 BEGIN
 	DataPath : ENTITY work.aftab_daru_datapath
 		GENERIC
@@ -87,6 +88,7 @@ BEGIN
 			initValueCnt        => "00",
 			addrIn              => addrIn,
 			memData             => memData,
+			select_incoming_data=> select_incoming_data,
 			zeroAddr            => zeroAddr,
 			ldAddr              => ldAddr,
 			selldEn             => selldEn,
@@ -129,5 +131,6 @@ BEGIN
 	enableData   => enableData,
 	incCnt       => incCnt,
 	zeroCnt      => zeroCnt,
+	select_incoming_data=> select_incoming_data,
 	completeDARU => completeDARU);
 END ARCHITECTURE behavioral;

@@ -152,10 +152,12 @@ BEGIN
 								   )
 	BEGIN
 		IF (exceptionRaiseTemp = '1') THEN
-			IF    (tempIllegalInstr = '1') THEN
-				causeCode <= '0' & STD_LOGIC_VECTOR(to_unsigned(2, len - 1));
-			ELSIF (tempInstrAddrMisaligned = '1') THEN
+			-- the misalignement of the instruction is detected sooner, so it has an higher priority when
+			-- checking which exception has been thrown
+			IF (tempInstrAddrMisaligned = '1') THEN
 				causeCode <= '0' & STD_LOGIC_VECTOR(to_unsigned(0, len - 1));
+			ELSIF    (tempIllegalInstr = '1') THEN
+				causeCode <= '0' & STD_LOGIC_VECTOR(to_unsigned(2, len - 1));
 			ELSIF (tempStoreAddrMisaligned = '1') THEN
 				causeCode <= '0' & STD_LOGIC_VECTOR(to_unsigned(6, len - 1));
 			ELSIF (tempLoadAddrMisaligned = '1') THEN

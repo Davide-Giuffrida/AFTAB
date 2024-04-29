@@ -58,6 +58,7 @@ ENTITY aftab_daru_controller IS
 		enableData   : OUT STD_LOGIC;
 		incCnt       : OUT STD_LOGIC;
 		zeroCnt      : OUT STD_LOGIC;
+		select_incoming_data : OUT STD_LOGIC;
 		completeDARU : OUT STD_LOGIC
 	);
 END ENTITY aftab_daru_controller;
@@ -76,7 +77,9 @@ BEGIN
 					nstate <= waitforStart;
 				END IF;
 			WHEN waitforMemready =>
-				IF ((coCnt AND memReady) = '1') THEN
+				IF ((coCnt AND memReady) = '1' AND startDARU = '1' AND dataInstrBar = '0') THEN
+					nstate <= waitForMemReady;
+				ELSIF (coCnt = '1' AND memReady = '1') THEN
 					nstate <= complete;
 				ELSE
 					nstate <= waitforMemready;
@@ -109,18 +112,32 @@ BEGIN
 		incCnt       <= '0';
 		completeDARU <= '0';
 		initReading  <= '0';
+		select_incoming_data <= '0';
 		CASE pstate IS
 			WHEN waitforStart =>
 				initCnt     <= startDARU;
 				ldAddr      <= startDARU;
 				ldNumBytes  <= startDARU;
 				initReading <= startDARU;
+				zeroAddr	<= NOT (startDARU); -- added to avoid blocking an excepting instruction
 			WHEN waitforMemready =>
 				selldEn    <= memReady;
 				enableData <= memReady;
 				readMem    <= '1';
 				enableAddr <= '1';
 				incCnt     <= memReady;
+				-- check if the FSM is going to transition to the complete state: if we are considering
+				-- the DARU1 we have to return to waitForMemReady if there is another instruction waiting 
+				IF (coCnt = '1' AND memReady = '1' AND dataInstrBar = '0') THEN
+					completeDARU <= '1';
+					select_incoming_data <= '1';
+				END IF;
+				IF ((coCnt AND memReady) = '1' AND startDARU = '1' AND dataInstrBar = '0') THEN
+					initCnt     <= startDARU;
+					ldAddr      <= startDARU;
+					ldNumBytes  <= startDARU;
+					initReading <= startDARU;
+				END IF;
 			WHEN complete =>
 				completeDARU <= '1';
 				-- in case you have to pass directly to the waitforMemReady

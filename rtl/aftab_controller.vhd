@@ -225,9 +225,10 @@ BEGIN
 	StateTransition : PROCESS (p_state, completedDARU1, completedDARU2, is_AAU_used, instructionDone,
 							   completedDAWU, completedAAU, opcode, func3, func7, 
 							   func12, exceptionRaise, interruptRaise, 
-							   modeTvec, mirror, mretOrUretBar, 
+							   modeTvec, mirror, mretOrUretBar, hazEX, hazM,
 							   previousPRV, delegationMode, ldMieUieField, ldMieReg, 
-							   validAccessCSR, readOnlyCSR, branch_taken, hazard_solved
+							   validAccessCSR, readOnlyCSR, branch_taken, hazard_solved,
+							   WB_ret_from_epc, WB_valid, is_store_in_mem
 							   ) 
 	BEGIN
 		n_state <= idle;
@@ -319,7 +320,7 @@ BEGIN
 	END PROCESS;
 
 	-- FSM TO HANDLE CSR OPERATIONS
-	CSR_FSM_combinational: PROCESS (CSR_p_state, ldMieReg, ldMieUieField, WB_isCSRInstruction, readOnlyCSR, WB_validAccessCSR, mirror, p_state)
+	CSR_FSM_combinational: PROCESS (CSR_p_state, ldMieReg, ldMieUieField, WB_isCSRInstruction, readOnlyCSR, WB_validAccessCSR, mirror, p_state, WB_func3)
 	BEGIN
 		mirrorUserCU_inst  <= '0';
 		-- writeRegFile_CSR   <= '0';
@@ -390,7 +391,8 @@ BEGIN
 							   modeTvec, mirror, mretOrUretBar, 
 							   previousPRV, delegationMode, ldMieUieField, ldMieReg, 
 							   validAccessCSR, readOnlyCSR,
-							   EX_valid, M_valid, DEC_valid, M2WB_en_temp, E2M_en_temp, D2E_en_temp
+							   EX_valid, M_valid, DEC_valid, M2WB_en_temp, E2M_en_temp, D2E_en_temp, WB_valid,
+							   ret_from_epc, is_store_in_mem, is_load_in_mem, hazEX, hazM
 							   ) 
 	BEGIN
 
@@ -800,6 +802,7 @@ BEGIN
 				END IF;
 			-- exception and interrupt handling states
 			WHEN checkDelegation =>
+				forced_RB_read <= '1';
 				CSR_from_WB	   <= '1';
 				GI2D_en_temp   <= '0';
 				D2E_en_temp    <= '0';
@@ -810,6 +813,7 @@ BEGIN
 				ldDelegation   <= '1';
 				mipCCLdDisable <= '1';
 			WHEN updateTrapValue =>
+				forced_RB_read <= '1';
 				CSR_from_WB	   <= '1';
 				GI2D_en_temp   <= '0';
 				D2E_en_temp    <= '0';
@@ -823,6 +827,7 @@ BEGIN
 				writeRegBank_exint   <= '1';
 				mipCCLdDisable <= '1';
 			WHEN updateMip => -- don't count up while you are here, afterward you have to update the UIP
+				forced_RB_read <= '1';
 				CSR_from_WB	   <= '1';
 				GI2D_en_temp   <= '0';
 				D2E_en_temp    <= '0';
@@ -834,6 +839,7 @@ BEGIN
 				writeRegBank_exint   <= '1';
 				mipCCLdDisable <= '1';
 			WHEN updateUip => --new
+				forced_RB_read <= '1';
 				CSR_from_WB	   <= '1';
 				GI2D_en_temp   <= '0';
 				D2E_en_temp    <= '0';
@@ -846,6 +852,7 @@ BEGIN
 				writeRegBank_exint   <= '1';
 				mipCCLdDisable <= '1';
 			WHEN updateCause =>
+				forced_RB_read <= '1';
 				CSR_from_WB	   <= '1';
 				GI2D_en_temp   <= '0';
 				D2E_en_temp    <= '0';
@@ -858,6 +865,7 @@ BEGIN
 				writeRegBank_exint   <= '1';
 				mipCCLdDisable <= '1';
 			WHEN updateEpc =>
+				forced_RB_read <= '1';
 				CSR_from_WB	   <= '1';
 				GI2D_en_temp   <= '0';
 				D2E_en_temp    <= '0';
@@ -870,6 +878,7 @@ BEGIN
 				writeRegBank_exint   <= '1';
 				mipCCLdDisable <= '1';
 			WHEN readTvec1 =>
+				forced_RB_read <= '1';
 				CSR_from_WB	   <= '1';
 				GI2D_en_temp   <= '0';
 				D2E_en_temp    <= '0';
@@ -879,7 +888,9 @@ BEGIN
 				selRomAddress  <= '1';
 				mipCCLdDisable <= '1';
 			WHEN readTvec2 =>
+				forced_RB_read <= '1';
 				CSR_from_WB	   <= '1';
+				GI2D_rst   	   <= '1'; -- to force a reload of the PC value
 				GI2D_en_temp   <= '0';
 				D2E_en_temp    <= '0';
 				E2M_en_temp    <= '0';
@@ -888,7 +899,7 @@ BEGIN
 				mirrorUserCU_exint   <= NOT(delegationMode(0));
 				ldMachine      <= delegationMode(0);
 				ldUser         <= NOT(delegationMode(0));
-				selMepc_CSR    <= '1'; -- TODO: WHY WAS THIS COMMENTED?
+				-- selMepc_CSR    <= '1'; -- YOU HAVE TO SELECT ADDRESS DIRECT OR VECTORED
 				upCntCSR       <= '1';
 				mipCCLdDisable <= '1';
 				IF (modeTvec = "00") THEN
@@ -897,6 +908,7 @@ BEGIN
 					selInterruptAddressVectored <= '1';
 				END IF;
 			WHEN readMstatus =>
+				forced_RB_read 				  <= '1';
 				CSR_from_WB	   				  <= '1';
 				GI2D_en_temp   				  <= '0';
 				D2E_en_temp    				  <= '0';
@@ -906,6 +918,7 @@ BEGIN
 				selRomAddress  				  <= '1';
 				mipCCLdDisable 				  <= '1';
 			WHEN updateMstatus =>
+				forced_RB_read 				  <= '1';
 				CSR_from_WB	   				  <= '1';
 				GI2D_en_temp   				  <= '0';
 				D2E_en_temp    				  <= '0';
@@ -919,12 +932,14 @@ BEGIN
 				writeRegBank_exint                  <= '1';
 				mipCCLdDisable                <= '1';
 			WHEN updateUstatus =>
+				forced_RB_read 				  <= '1';
 				CSR_from_WB	   				  <= '1';
 				GI2D_en_temp   				  <= '0';
 				D2E_en_temp    				  <= '0';
 				E2M_en_temp    				  <= '0';
 				M2WB_en_temp   				  <= '0';
-				mirrorUserCU_exint                  <= '1';
+				M2WB_rst 					  <= '1';
+				mirrorUserCU_exint            <= '1';
 				selRomAddress                 <= '1';
 				machineStatusAlterationPreCSR <= delegationMode(0);
 				userStatusAlterationPreCSR    <= NOT(delegationMode(0));
@@ -933,6 +948,7 @@ BEGIN
 			    ldMachine      				  <= delegationMode(0);
 				ldUser                        <= NOT(delegationMode(0));
 			WHEN retEpc =>
+				forced_RB_read <= '1';
 				CSR_from_WB	   <= '1';
 				GI2D_en_temp   <= '0';
 				D2E_en_temp    <= '0';
@@ -943,6 +959,7 @@ BEGIN
 			    ldValueCSR 	   <= "100";
 			    ldCntCSR   	   <= '1';
 			WHEN retReadMstatus =>
+				forced_RB_read <= '1';
 				CSR_from_WB	   <= '1';
 				GI2D_en_temp   <= '0';
 				D2E_en_temp    <= '0';
@@ -952,6 +969,7 @@ BEGIN
 				mirrorUserCU_exint   <= '0';
 				selRomAddress  <= '1';
 			WHEN retUpdateMstatus =>
+				forced_RB_read <= '1';
 				CSR_from_WB	   <= '1';
 				GI2D_en_temp   <= '0';
 				D2E_en_temp    <= '0';
@@ -971,16 +989,17 @@ BEGIN
 				userStatusAlterationPostCSR    <= NOT(mretOrUretBar);
 				writeRegBank_exint                   <= '1';
 			WHEN retUpdateUstatus =>
+				forced_RB_read 				   <= '1';
 				CSR_from_WB	   				   <= '1';
 				GI2D_en_temp   				   <= '0';
 				D2E_en_temp    				   <= '0';
 				E2M_en_temp    				   <= '0';
 				M2WB_en_temp   				   <= '0';
 				selRomAddress                  <= '1';
-				mirrorUserCU_exint                   <= '1';
+				mirrorUserCU_exint             <= '1';
 				machineStatusAlterationPostCSR <= mretOrUretBar;
 				userStatusAlterationPostCSR    <= NOT(mretOrUretBar);
-				writeRegBank_exint                   <= '1';
+				writeRegBank_exint             <= '1';
 				zeroCntCSR                     <= '1';
 				GI2D_rst 					   <= '1';
 				D2E_rst 					   <= '1';
