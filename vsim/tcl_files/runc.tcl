@@ -38,7 +38,8 @@
 vsim -quiet work.aftab_testbench +nowarnTRAN +nowarnTSCALE +nowarnTFMPC -t 10ps -voptargs="+acc -suppress 2103" -dpicpppath /usr/bin/gcc 
 
 run $var ns
-force memRead 0
+force memRead1 0
+force memRead2 0
 run 1000 ns
 force log_en 1
 run 1000 ns

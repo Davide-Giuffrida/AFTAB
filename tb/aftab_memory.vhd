@@ -185,7 +185,7 @@ RW : PROCESS(rst, clk, writeMem2, readMem1, readMem2, addressBus1, addressBus2, 
 				adr := '1' & addressBus2(actual_address-2 DOWNTO 0);
 				mem(TO_INTEGER(UNSIGNED(adr))) <= dataIn2(7 DOWNTO 0);
 				-- write another byte only if the reading op has to be performed over 2 bytes
-				IF (bytesPort1 = '1') THEN
+				IF (bytesPort2 = '1') THEN
 					mem(TO_INTEGER(UNSIGNED(adr)) + 1) <= dataIn2(15 DOWNTO 8);
 				END IF;
 			END IF;

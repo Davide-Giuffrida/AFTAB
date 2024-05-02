@@ -574,6 +574,9 @@ ARCHITECTURE behavioral OF aftab_datapath IS
 	SIGNAL E2M_validAccessCSR_curr		 : STD_LOGIC;
 	SIGNAL M2WB_validAccessCSR_curr		 : STD_LOGIC;
 	SIGNAL D2E_outCSR_next_pre_bypass	 : STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
+	SIGNAL comparisonResult				 : STD_LOGIC_VECTOR (len - 1 DOWNTO 0);
+	SIGNAL bytesPerMemAccessDARU		 : STD_LOGIC;
+	SIGNAL bytesPerMemAccessDAWU		 : STD_LOGIC;
 
 	-- unused control signals
 	SIGNAL E_writeRegFile			  	 : STD_LOGIC;
@@ -838,10 +841,10 @@ BEGIN
 	writeRegFile_in <= WB_writeRegFile AND NOT(M2WB_ex_flag_curr);
 
 	-- setOne input to the RF
-	setOne_in <= NOT(M2WB_lt_curr) AND WB_setZeroOrOne;
+	setOne_in <= M2WB_lt_curr AND WB_setZeroOrOne;
 
 	-- setZero input to the RF 
-	setZero_in <= M2WB_lt_curr AND WB_setZeroOrOne;
+	setZero_in <= NOT(M2WB_lt_curr) AND WB_setZeroOrOne;
 
 	-- register file: to fetch the operands and update the destination (during write-back)
 	registerFile : ENTITY WORK.aftab_register_file
@@ -1102,7 +1105,7 @@ BEGIN
 		rst               => rst,
 		sync_rst 		  => D2E_rst_def, -- reset the AAU state synchronously when a misprediction/exception/interrupt occurs or when the instruction leaves EXE
 		ain               => D2E_ALU_op1_curr,
-		bin               => D2E_ALU_op1_curr,
+		bin               => D2E_ALU_op2_curr,
 		startMultAAU      => startMultiplyAAU_def, -- control signal to start the mul (can be kept high during the whole multiplication, must be reset when completedAAU is asserted)
 		startDivideAAU    => startDivideAAU_def, -- the same for the division
 		SignedSigned      => E_signedSigned,
@@ -1256,7 +1259,7 @@ BEGIN
 		storeMisalignedFlag => OPEN,
 		writeMem            => writeMemDAWU, -- the second memory port can be used either as a write port or a read port
 		completeDAWU        => completedDAWU, -- controller
-		bytesToWrite		=> bytesPerMemAccess); 
+		bytesToWrite		=> bytesPerMemAccessDAWU); 
 
 	-- start a new write op from memory when the instruction is a store and either the M2WB_en is high (so the current instruction
 	-- is leaving the memory stage) or there is no instruction in the DAWU (if there is an instruction you shouldn't overwrite it)
@@ -1303,7 +1306,7 @@ BEGIN
 		dataOut             => dataDARU2, -- we can enable forwarding of the data read to the output of the DAWU
 		addrOut             => memAddrDARU2, -- as before
 		readMem             => readMemDARU2,  -- core
-		bytesToRead			=> bytesPerMemAccess);
+		bytesToRead			=> bytesPerMemAccessDARU);
 
 	-- start a new read op from memory when the instruction is a load and either the M2WB_en is high (so the current instruction
 	-- is leaving the memory stage) or there is no instruction in the DARU (if there is an instruction you shouldn't overwrite it)
@@ -1342,7 +1345,9 @@ BEGIN
 
 	-- select address to be sent to memory between the one produced by DARU and the one produced by DAWU
 	memAddr2 <= memAddrDARU2 WHEN readMemDARU2 = '1' ELSE memAddrDAWU;
-	
+
+	-- bytes to write/read
+	bytesPerMemAccess <= bytesPerMemAccessDARU WHEN readMemDARU2 = '1' ELSE bytesPerMemAccessDAWU;	
 	-----------------------------------------------------------------------------------------------------------
 	--- WRITE-BACK STAGE AND OUTSIDE THE PIPELINE -------------------------------------------------------------
 	-----------------------------------------------------------------------------------------------------------	
@@ -1353,10 +1358,15 @@ BEGIN
 	-- hazard solved flag: raised when the instruction that produces the register needed by the one in DEC completes
 	hazard_solved <= M2WB_hazard_flag_curr AND instructionDone;
 
+	-- zero extension of the value to be written in the destination register in case of an slt
+	comparisonResult <= (len - 1 DOWNTO 1 => '0') & setOne_in;
+
+	-- TODO: FIX FOR BYPASSES INVOLVING SLT INSTRUCTIONS
 	-- selection of the data to be written in the destination register in the RF
 	mux10 :	writeData <= M2WB_ALU_res_curr WHEN WB_selALU = '1' ELSE
 			   M2WB_PC_plus4_curr WHEN WB_selPC4 = '1' ELSE
 			   M2WB_MEM_res_curr WHEN WB_selMem = '1' ELSE
+			   comparisonResult WHEN WB_setZeroOrOne = '1' ELSE
 			   (OTHERS => '0');
 
 	-- address of the register to be modified in the CSR register bank

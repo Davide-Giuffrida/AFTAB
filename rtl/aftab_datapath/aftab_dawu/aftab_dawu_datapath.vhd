@@ -79,6 +79,7 @@ ARCHITECTURE Behavioral OF aftab_dawu_datapath IS
 	SIGNAL byteCnt     : STD_LOGIC_VECTOR (1 DOWNTO 0);
 	SIGNAL outCnt_ext : STD_LOGIC_VECTOR (1 DOWNTO 0);
 	SIGNAL bytesToWrite_temp : STD_LOGIC;
+	SIGNAL totalByteCnt : STD_LOGIC;
 BEGIN
 	--Register Part
 	nBytesReg : ENTITY WORK.aftab_register
@@ -94,6 +95,7 @@ BEGIN
 			outReg => nBytesOut);
 		
 	bytesToWrite_temp <= '0' when nBytesOut="00" else '1';
+	totalByteCnt <= '0' when nBytesOut/="11" else '1';
 	bytesToWrite <= bytesToWrite_temp;
 	addrReg : ENTITY WORK.aftab_register
 		GENERIC
@@ -149,7 +151,7 @@ BEGIN
 		coCnt     => OPEN);
 	muxOut <= outReg0 WHEN outCnt(0) = '0' ELSE
 		outReg1 WHEN outCnt(0) = '1';
-	coCnt <= '1' WHEN (outCnt(0) = bytesToWrite_temp) ELSE '0';
+	coCnt <= '1' WHEN (outCnt(0) = totalByteCnt) ELSE '0';
 	Adder : ENTITY WORK.aftab_opt_adder
 		GENERIC
 		MAP(len => 32)
