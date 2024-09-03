@@ -688,8 +688,35 @@ ARCHITECTURE behavioral OF aftab_datapath IS
 	SIGNAL WB_func7						 : STD_LOGIC_VECTOR (6 DOWNTO 0);				
 	SIGNAL WB_func12					 : STD_LOGIC_VECTOR (11 DOWNTO 0);			
 	SIGNAL WB_opcode					 : STD_LOGIC_VECTOR (6 DOWNTO 0);			
+	SIGNAL branch_taken_int				 : STD_LOGIC;
+	SIGNAL readMemDARU1_int				 : STD_LOGIC;
+	SIGNAL completedAAU_int				 : STD_LOGIC;
+	SIGNAL writeMemDAWU_int				 : STD_LOGIC;
+	SIGNAL readMemDARU2_int				 : STD_LOGIC;
+	SIGNAL instructionDone_int			 : STD_LOGIC;
+	SIGNAL interruptRaise_int			 : STD_LOGIC;
+	SIGNAL hazEX_int					 : STD_LOGIC;
+	SIGNAL hazM_int						 : STD_LOGIC;
+	SIGNAL mirror_int					 : STD_LOGIC;
+	SIGNAL completedDARU1_def_int		 : STD_LOGIC;
+	SIGNAL exceptionRaise_int			 : STD_LOGIC;
+	SIGNAL validAccessCSR_int			 : STD_LOGIC;
 
 BEGIN
+	-- outputs assigned to the dummy internal signals
+	branch_taken <= branch_taken_int;
+	readMemDARU1 <= readMemDARU1_int;
+	completedAAU <= completedAAU_int;
+	writeMemDAWU <= writeMemDAWU_int;
+	readMemDARU2 <= readMemDARU2_int;
+	instructionDone <= instructionDone_int;
+	interruptRaise <= interruptRaise_int;
+	hazEX <= hazEX_int;
+	hazM <= hazM_int;
+	mirror <= mirror_int;
+	completedDARU1_def <= completedDARU1_def_int;
+	exceptionRaise <= exceptionRaise_int;
+	validAccessCSR <= validAccessCSR_int;
 
 	-- NEW DATAPATH
 	
@@ -735,7 +762,7 @@ BEGIN
 	-- if there is an interrupt being handled (base) --> interruptStartAddressDirect
 	-- if // (vectored) --> interruptStartAddressVectored
 	-- TODO: MAKE SURE THAT EVERYTHING WORKS CORRECTLY, SO THAT IT IS POSSIBLE TO FORCE A VALUE IN THE PC.
-	inPC <= E2M_ALU_res_curr WHEN branch_taken = '1' ELSE -- branch_taken from BPU in memory stage
+	inPC <= E2M_ALU_res_curr WHEN branch_taken_int = '1' ELSE -- branch_taken from BPU in memory stage
 		D2E_outCSR_next WHEN selMepc_CSR = '1' ELSE -- driven from exception handling phase
 		interruptStartAddressDirect WHEN selInterruptAddressDirect = '1' ELSE -- driven from interrupt handling phase
 		interruptStartAddressVectored WHEN selInterruptAddressVectored = '1' ELSE -- as before 
@@ -766,12 +793,12 @@ BEGIN
 		dataOut             => dataDARU1, -- the 32 bits word (instruction), kept available until the cycle after raising startDARU
 		addrOut             => memAddr1, -- the address being read
 		readAddrOut			=> GI2D_PC_next, -- the address of the instruction being read
-		readMem             => readMemDARU1, -- the control signal which enables memory read
+		readMem             => readMemDARU1_int, -- the control signal which enables memory read
 		bytesToRead			=> bytesToReadDARU1); -- the bytes to be read per memory access (0 if 1, 1 if 2): if you read 1 byte then the MSB will be zeroed --> TODO: TO BE SENT TO MEMORY
 
 	-- condition under which a new fetch operation has to be started: either there is an instruction leaving or there is nothing being read in the DARU
 	-- the second operand of the OR represents the case in which there is nothing being executed or waiting to be forwarded in decode
-	DARU1_en <= (GI2D_en_def AND NOT(GI2D_rst_def)) OR (NOT(readMemDARU1) AND NOT(completedDARU1_def)); -- def instead of stored
+	DARU1_en <= (GI2D_en_def AND NOT(GI2D_rst_def)) OR (NOT(readMemDARU1_int) AND NOT(completedDARU1_def_int)); -- def instead of stored
 
 	-- a flip flop to hold the completeDARU1 flag, otherwise it would be lost if there was a stall in decode
 	complete_FF: process(clk,rst) BEGIN
@@ -790,7 +817,7 @@ BEGIN
 	END PROCESS;
 
 	-- completedDARU1 signal to be sent to CU
-	completedDARU1_def <= completedDARU1 OR completedDARU1_stored;
+	completedDARU1_def_int <= completedDARU1 OR completedDARU1_stored;
 
 	-- THE CONTROLLER HAS TO GENERATE THE GI2D_en AS (completedDARU1 or completedDARU1_stored) and not(hazards) and unit_available
 	-- INSTRUCTION REGISTER (inside the pipeline)
@@ -882,7 +909,7 @@ BEGIN
 		mirrorUstatus    => mirrorUstatus, -- if you update MSTATUS you have to update USTATUS too, because this last register is simply a mirror of MSTATUS with limited accessibility
 		mirrorUie        => mirrorUie,
 		mirrorUip        => mirrorUip,
-		mirror           => mirror, -- to be sent to CU to determine if the state afterward has to be used to update the mirror register
+		mirror           => mirror_int, -- to be sent to CU to determine if the state afterward has to be used to update the mirror register
 		ldMieReg         => ldMieReg,
 		ldMieUieField    => ldMieUieField,
 		outMieFieldCCreg => CCmieField, -- global enable bit for interrupts in machine mode
@@ -903,7 +930,7 @@ BEGIN
 
 	-- if the access is invalid then the CU will throw an illegalInstructionException
 	--validAccessCSR <= '1' WHEN (curPRV >= addressRegBank(9 DOWNTO 8)) ELSE '0'; -- changed Luca
-	validAccessCSR <= '1' WHEN ( curPRV >= addressRegBank(9 DOWNTO 8) AND validAddressCSR = '1') ELSE '0';
+	validAccessCSR_int <= '1' WHEN ( curPRV >= addressRegBank(9 DOWNTO 8) AND validAddressCSR = '1') ELSE '0';
 
 	-- DONE: CU should raise the writeRegBank only if the register that we are trying to write (the same one we are trying to read) is actually writeable
 	readOnlyCSR    <= '1' WHEN (writeAddressRegBank(11 DOWNTO 10) = "11") ELSE '0';
@@ -956,6 +983,8 @@ BEGIN
 
 		bypass_first_operand <= (OTHERS => '0');
 		bypass_second_operand <= (OTHERS => '0');
+		bypass_CSR_second_operand <= (OTHERS => '0');
+		bypass_CSR_result <= (OTHERS => '0');
 		bypass_result <= (OTHERS => '0');
 		bypass_first_operand_en <= '0';
 		bypass_second_operand_en <= '0';
@@ -1091,10 +1120,10 @@ BEGIN
 	-- EXECUTE STAGE ------------------------------------------------------------------------------------------
 
 	-- startMultiplyAAU is reset when a multiplication is stalling in the EX stage
-	startMultiplyAAU_def <= E_startMultiplyAAU AND (NOT(completedAAU) AND NOT(completedAAU_stored));
+	startMultiplyAAU_def <= E_startMultiplyAAU AND (NOT(completedAAU_int) AND NOT(completedAAU_stored));
 
 	-- the same applies for divisions
-	startDivideAAU_def <= E_startDivideAAU AND (NOT(completedAAU) AND NOT(completedAAU_stored));
+	startDivideAAU_def <= E_startDivideAAU AND (NOT(completedAAU_int) AND NOT(completedAAU_stored));
 	
 	aau : ENTITY WORK.aftab_aau
 		GENERIC
@@ -1114,7 +1143,7 @@ BEGIN
 		resAAU1           => resAAH,
 		resAAU2           => resAAL,
 		dividedByZeroFlag => dividedByZeroFlag, -- the division is never started, so the flag remains on while the instruction is kept in EX
-		completeAAU       => completedAAU); -- to be sent to the CU to build the D2E_en
+		completeAAU       => completedAAU_int); -- to be sent to the CU to build the D2E_en
 
 	-- flag that is set when the operation in EX relies on AAU for computation
 	is_AAU_used <= E_startMultiplyAAU OR E_startDivideAAU;
@@ -1127,7 +1156,7 @@ BEGIN
 			-- reset if pipeline is sync reset or if the instruction leaves execute
 			IF (D2E_rst = '1' OR (E2M_en_def = '1' AND E2M_rst_def = '0')) THEN 
 				completedAAU_stored <= '0';
-			ELSIF (completedAAU = '1') THEN
+			ELSIF (completedAAU_int = '1') THEN
 				completedAAU_stored <= '1';
 			END IF;
 		END IF;
@@ -1213,29 +1242,29 @@ BEGIN
 	-- IMPORTANT: SINCE THERE IS THE NEED TO IMPLEMENT JAL AND JALR IT IS NECESSARY TO AVOID CLEARING THE M2WB PIPELINE REG,
 	-- BECAUSE THE BRANCH HAS TO PROPAGATE THROUGH IT TO REACH THE WRITE-BACK STAGE (WHERE THE WRITE OP IS PERFORMED)
 	branch_outcome: process(M_opcode ,M_func3, E2M_lt_curr, E2M_gt_curr, E2M_eq_curr) BEGIN
-		branch_taken <= '0';
+		branch_taken_int <= '0';
 		IF (M_opcode = branch) THEN 
 			IF (M_func3(2) = '1' AND M_func3(0) = '0') THEN --BLT, BLTU
 				IF (E2M_lt_curr = '1') THEN
-					branch_taken <= '1';
+					branch_taken_int <= '1';
 				END IF;
 			ELSIF (M_func3(2) = '1' AND M_func3(0) = '1') THEN --BGE, BGEU
 				IF (E2M_gt_curr = '1' OR E2M_eq_curr = '1') THEN
-					branch_taken <= '1';
+					branch_taken_int <= '1';
 				END IF;
 			ELSIF (M_func3(2) = '0' AND M_func3(0) = '0') THEN --BEQ
 				IF (E2M_eq_curr = '1') THEN
-					branch_taken <= '1';
+					branch_taken_int <= '1';
 				END IF;
 			ELSIF (M_func3(2) = '0' AND M_func3(0) = '1') THEN --BNE
 				IF (E2M_eq_curr = '0') THEN
-					branch_taken <= '1';
+					branch_taken_int <= '1';
 				END IF;
 			END IF;
 		ELSIF (M_opcode = JumpAndLink) THEN
-			branch_taken <= '1';
+			branch_taken_int <= '1';
 		ELSIF (M_opcode = JumpAndLinkRegister) THEN
-			branch_taken <= '1';
+			branch_taken_int <= '1';
 		END IF;
 	END PROCESS;
 
@@ -1257,14 +1286,14 @@ BEGIN
 		addrOut             => memAddrDAWU, -- the address where to write dataDAWU
 		dataOut             => dataDAWU, -- data to be sent to memory
 		storeMisalignedFlag => OPEN,
-		writeMem            => writeMemDAWU, -- the second memory port can be used either as a write port or a read port
+		writeMem            => writeMemDAWU_int, -- the second memory port can be used either as a write port or a read port
 		completeDAWU        => completedDAWU, -- controller
 		bytesToWrite		=> bytesPerMemAccessDAWU); 
 
 	-- start a new write op from memory when the instruction is a store and either the M2WB_en is high (so the current instruction
 	-- is leaving the memory stage) or there is no instruction in the DAWU (if there is an instruction you shouldn't overwrite it)
 	-- DONE: IN THE CU YOU SHOULD CHECK IF AN INSTRUCTION IS A STORE AND WHETHER IT THROWS AN EXCEPTION OR NOT
-	DAWU_en <= M_startDAWU AND NOT(E2M_ex_flag_curr) AND ((M2WB_en AND NOT(M2WB_rst_def)) OR (NOT(writeMemDAWU) AND NOT(completedDAWU_stored)));
+	DAWU_en <= M_startDAWU AND NOT(E2M_ex_flag_curr) AND ((M2WB_en AND NOT(M2WB_rst_def)) OR (NOT(writeMemDAWU_int) AND NOT(completedDAWU_stored)));
 
 	completeDAWU_register: PROCESS (clk, rst) BEGIN
 		IF (rst = '1') THEN
@@ -1274,6 +1303,8 @@ BEGIN
 				completedDAWU_stored <= '0';
 			ELSIF (completedDAWU = '1') THEN
 				completedDAWU_stored <= '1';
+			ELSE
+				completedDAWU_stored <= '0';
 			END IF;
 		END IF;
 	END PROCESS;
@@ -1305,12 +1336,12 @@ BEGIN
 		completeDARU        => completedDARU2, -- controller
 		dataOut             => dataDARU2, -- we can enable forwarding of the data read to the output of the DAWU
 		addrOut             => memAddrDARU2, -- as before
-		readMem             => readMemDARU2,  -- core
+		readMem             => readMemDARU2_int,  -- core
 		bytesToRead			=> bytesPerMemAccessDARU);
 
 	-- start a new read op from memory when the instruction is a load and either the M2WB_en is high (so the current instruction
 	-- is leaving the memory stage) or there is no instruction in the DARU (if there is an instruction you shouldn't overwrite it)
-	DARU2_en <= M_startDARU AND NOT(E2M_ex_flag_curr) AND ((M2WB_en AND NOT(M2WB_rst_def)) OR (NOT(readMemDARU2) AND NOT(completedDARU2_stored)));
+	DARU2_en <= M_startDARU AND NOT(E2M_ex_flag_curr) AND ((M2WB_en AND NOT(M2WB_rst_def)) OR (NOT(readMemDARU2_int) AND NOT(completedDARU2_stored)));
 
 	completeDARU2_register: PROCESS (clk, rst) BEGIN
 		IF (rst = '1') THEN
@@ -1320,6 +1351,8 @@ BEGIN
 				completedDARU2_stored <= '0';
 			ELSIF (completedDARU2 = '1') THEN
 				completedDARU2_stored <= '1';
+			ELSE
+				completedDARU2_stored <= '0';
 			END IF;
 		END IF;
 	END PROCESS;
@@ -1341,13 +1374,13 @@ BEGIN
 
 	-- exceptionHandling and interruptHandling are "Mealy set" by Normal and "Moore set" by int/ex Handling states. 
 	-- TODO: CHECK IF IT IS OK USING exception/interruptRaise IN THIS PART OF THE CODE
-	M2WB_rst_def <= M2WB_rst OR (NOT(M2WB_en) AND instructionDone AND NOT(exceptionRaise) AND NOT(interruptRaise));
+	M2WB_rst_def <= M2WB_rst OR (NOT(M2WB_en) AND instructionDone_int AND NOT(exceptionRaise_int) AND NOT(interruptRaise_int));
 
 	-- select address to be sent to memory between the one produced by DARU and the one produced by DAWU
-	memAddr2 <= memAddrDARU2 WHEN readMemDARU2 = '1' ELSE memAddrDAWU;
+	memAddr2 <= memAddrDARU2 WHEN readMemDARU2_int = '1' ELSE memAddrDAWU;
 
 	-- bytes to write/read
-	bytesPerMemAccess <= bytesPerMemAccessDARU WHEN readMemDARU2 = '1' ELSE bytesPerMemAccessDAWU;	
+	bytesPerMemAccess <= bytesPerMemAccessDARU WHEN readMemDARU2_int = '1' ELSE bytesPerMemAccessDAWU;	
 	-----------------------------------------------------------------------------------------------------------
 	--- WRITE-BACK STAGE AND OUTSIDE THE PIPELINE -------------------------------------------------------------
 	-----------------------------------------------------------------------------------------------------------	
@@ -1356,7 +1389,7 @@ BEGIN
 	WB_validAccessCSR <= M2WB_validAccessCSR_curr;
 
 	-- hazard solved flag: raised when the instruction that produces the register needed by the one in DEC completes
-	hazard_solved <= M2WB_hazard_flag_curr AND instructionDone;
+	hazard_solved <= M2WB_hazard_flag_curr AND instructionDone_int;
 
 	-- zero extension of the value to be written in the destination register in case of an slt
 	comparisonResult <= (len - 1 DOWNTO 1 => '0') & setOne_in;
@@ -1485,7 +1518,7 @@ BEGIN
 
 	-- drive the PC_from_WB signal high when you are handling an interrupt and there is a store in memory (if exceptionRaise is high
 	-- then you will handle the exception first, because it has a higher priority)
-	PC_from_WB <= M_startDAWU AND interruptRaise AND NOT(exceptionRaise);
+	PC_from_WB <= M_startDAWU AND interruptRaise_int AND NOT(exceptionRaise_int);
 
 	-- The PC value to be loaded in the CSR register
 	-- It could be either the PC value from write-back or the one from memory (in case there is a store in memory and we
@@ -1567,9 +1600,9 @@ BEGIN
 						  M2WB_illegal_instruction_flag_curr & M2WB_instr_misaligned_flag_curr & 
 						  '0' & '0';
 	-- an interrupt is raised when the condition applies and when the instruction in write-back terminates.
-	interruptRaise <= interruptRaiseTemp AND instructionDone AND M2WB_valid_curr;
+	interruptRaise_int <= interruptRaiseTemp AND instructionDone_int AND M2WB_valid_curr;
 	-- the same applies for exceptions
-	exceptionRaise <= exceptionRaiseTemp AND instructionDone AND M2WB_valid_curr;
+	exceptionRaise_int <= exceptionRaiseTemp AND instructionDone_int AND M2WB_valid_curr;
 
 	-- HAZARD DETECTION -----------------------------------------------------------------------------
 	-- when an haz signal is raised, the CU should stop the pipeline for the number of cycles that is 
@@ -1596,6 +1629,8 @@ BEGIN
 
 		hazEX_first_operand <= (OTHERS => '0');
 		hazEX_second_operand <= (OTHERS => '0');
+		hazEX_CSR_second_operand <= (OTHERS => '0');
+		hazEX_CSR_result <= (OTHERS => '0');
 		hazEX_result <= (OTHERS => '0');
 		hazEX_first_operand_en <= '0';
 		hazEX_second_operand_en <= '0';
@@ -1698,14 +1733,14 @@ BEGIN
 	hazardEX_handling: PROCESS(hazEX_first_operand, hazEX_first_operand_en, hazEX_second_operand, hazEX_second_operand_en, hazEX_result, 
 	hazEX_result_en, hazEX_zero_first_operand, hazEX_zero_second_operand, hazEX_CSR_second_operand, hazEX_CSR_second_operand_en,
 	hazEX_CSR_result, hazEX_CSR_result_en, D2E_ex_flag_next) BEGIN
-		hazEX <= '0';
+		hazEX_int <= '0';
 		-- comparison between first operand and result
 		IF (D2E_ex_flag_next = '0' AND hazEX_first_operand = hazEX_result AND hazEX_first_operand_en = '1' AND hazEX_result_en = '1' AND hazEX_zero_first_operand = '0') THEN
-			hazEX <= '1';
+			hazEX_int <= '1';
 		-- comparison between second operand and result (considering also a comparison between a CSR result and a CSR second operand)
 		ELSIF (D2E_ex_flag_next = '0' AND ((hazEX_second_operand = hazEX_result AND hazEX_second_operand_en = '1' AND hazEX_result_en = '1' AND hazEX_zero_second_operand = '0')
 			OR (((hazEX_CSR_mirror = '0' AND hazEX_CSR_second_operand = hazEX_CSR_result) OR (hazEX_CSR_mirror = '1' AND hazEX_CSR_second_operand(7 DOWNTO 0) = hazEX_CSR_result (7 DOWNTO 0))) AND hazEX_CSR_second_operand_en = '1' AND hazEX_CSR_result_en = '1' ))) THEN
-			hazEX <= '1';
+			hazEX_int <= '1';
 		END IF;
 	END PROCESS;
 
@@ -1714,6 +1749,8 @@ BEGIN
 
 		hazM_first_operand <= (OTHERS => '0');
 		hazM_second_operand <= (OTHERS => '0');
+		hazM_CSR_second_operand <= (OTHERS => '0');
+		hazM_CSR_result <= (OTHERS => '0');
 		hazM_result <= (OTHERS => '0');
 		hazM_first_operand_en <= '0';
 		hazM_second_operand_en <= '0';
@@ -1815,22 +1852,22 @@ BEGIN
 	hazardM_handling: PROCESS(hazM_first_operand, hazM_first_operand_en, hazM_second_operand, hazM_second_operand_en, hazM_result, 
 	hazM_result_en, hazM_zero_first_operand, hazM_zero_second_operand, hazM_CSR_second_operand, hazM_CSR_second_operand_en,
 	hazM_CSR_result, hazM_CSR_result_en, D2E_ex_flag_next) BEGIN
-		hazM <= '0';
+		hazM_int <= '0';
 		-- comparison between first operand and result
 		IF (D2E_ex_flag_next = '0' AND hazM_first_operand = hazM_result AND hazM_first_operand_en = '1' AND hazM_result_en = '1' AND hazM_zero_first_operand = '0') THEN
-			hazM <= '1';
+			hazM_int <= '1';
 		-- comparison between second operand and result (considering also a comparison between a CSR result and a CSR second operand)
 		ELSIF (D2E_ex_flag_next = '0' AND ((hazM_second_operand = hazM_result AND hazM_second_operand_en = '1' AND hazM_result_en = '1' AND hazM_zero_second_operand = '0')
 			OR (((hazM_CSR_mirror = '0' AND hazM_CSR_second_operand = hazM_CSR_result) OR (hazM_CSR_mirror = '1' AND hazM_CSR_second_operand(7 DOWNTO 0) = hazM_CSR_result (7 DOWNTO 0))) AND hazM_CSR_second_operand_en = '1' AND hazM_CSR_result_en = '1'))) THEN
-			hazM <= '1';
+			hazM_int <= '1';
 		END IF;
 	END PROCESS;
 
 	-- HAZARD FLAGS: to be propagated through the pipeline
 	-- E2M flag is raised when there is an hazard DEC-EX (the flag will actually be set only when the instruction in EX passes to MEM)
-	E2M_hazard_flag_next <= '1' WHEN hazEX = '1' ELSE '0';
+	E2M_hazard_flag_next <= '1' WHEN hazEX_int = '1' ELSE '0';
 	-- M2WB flag is raised when there is a DEC-MEM hazard or when the previous DEC-EX hazard is leaving memory
-	M2WB_hazard_flag_next <= '1' WHEN hazM = '1' OR E2M_hazard_flag_curr = '1' ELSE '0';
+	M2WB_hazard_flag_next <= '1' WHEN hazM_int = '1' OR E2M_hazard_flag_curr = '1' ELSE '0';
 	
 	-- PIPELINE REGISTERS ---------------------------------------------------------------------------
 	-- FIXME: REMOVE USELESS REGISTERS
@@ -1956,7 +1993,7 @@ BEGIN
 				D2E_ctrl_word_curr <= (OTHERS => '0');
 				D2E_ex_flag_curr <= '0';
 			ELSIF (D2E_en_def = '1') THEN
-				D2E_validAccessCSR_curr <= validAccessCSR;
+				D2E_validAccessCSR_curr <= validAccessCSR_int;
 				D2E_valid_curr <= GI2D_valid_curr;
 				D2E_ex_flag_curr <= D2E_ex_flag_next;
 				D2E_instr_misaligned_flag_curr <= GI2D_instr_misaligned_flag_curr;
@@ -2149,7 +2186,7 @@ BEGIN
 	-- SEND A ONE DIRECTLY (MUX DRIVEN BY mirror BETWEEN '1' AND flagCurr, WHERE flagNext <= '1' AND THE ENABLE
 	-- SIGNAL IS mirror AND M2WB_valid_curr AND THE RESET ONE IS M2WB_en OR M2WB_rst_def) 
 
-	instructionDone <= '1' WHEN (((mirror = '0' OR writeRegBank = '0') AND M2WB_valid_curr = '1') OR M2WB_valid_curr = '0') ELSE instructionDoneCSR;
+	instructionDone_int <= '1' WHEN (((mirror_int = '0' OR writeRegBank = '0') AND M2WB_valid_curr = '1') OR M2WB_valid_curr = '0') ELSE instructionDoneCSR;
 
 	-- MC_register: PROCESS (clk, rst) BEGIN
 	-- 	IF (rst = '1') THEN

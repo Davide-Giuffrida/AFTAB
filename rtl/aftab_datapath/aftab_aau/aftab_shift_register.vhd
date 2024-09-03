@@ -36,7 +36,8 @@
 
 LIBRARY IEEE;
 USE IEEE.std_logic_1164.ALL;
-USE IEEE.std_logic_UNSIGNED.ALL;
+-- use ieee.std_logic_unsigned.all;
+USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY aftab_shift_register IS
 	GENERIC (len : INTEGER := 32);

@@ -50,7 +50,7 @@
 
 LIBRARY IEEE;
 USE IEEE.std_logic_1164.ALL;
-USE IEEE.std_logic_unsigned.ALL;
+-- use ieee.std_logic_unsigned.all;
 USE WORK.constants.ALL;
 ENTITY aftab_controller IS
 	GENERIC
@@ -392,7 +392,7 @@ BEGIN
 							   previousPRV, delegationMode, ldMieUieField, ldMieReg, 
 							   validAccessCSR, readOnlyCSR,
 							   EX_valid, M_valid, DEC_valid, M2WB_en_temp, E2M_en_temp, D2E_en_temp, WB_valid,
-							   ret_from_epc, is_store_in_mem, is_load_in_mem, hazEX, hazM
+							   WB_ret_from_epc, is_store_in_mem, is_load_in_mem, hazEX, hazM
 							   ) 
 	BEGIN
 

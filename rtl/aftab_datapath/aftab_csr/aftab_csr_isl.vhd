@@ -36,7 +36,9 @@
 
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
-USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- use ieee.std_logic_unsigned.all;
+USE IEEE.NUMERIC_STD.ALL;
+
 ENTITY aftab_csr_isl IS
 	GENERIC
 		(len : INTEGER := 32);
@@ -74,6 +76,7 @@ END ENTITY aftab_csr_isl;
 --
 ARCHITECTURE behavioral OF aftab_csr_isl IS
 	SIGNAL orRes, andRes, regOrImm, preInCSR : STD_LOGIC_VECTOR(len - 1 DOWNTO 0);
+	SIGNAL previousPRV_int: STD_LOGIC_VECTOR(1 DOWNTO 0);
 BEGIN
 	regOrImm <= P1 WHEN selP1 = '1' ELSE
 		("000000000000000000000000000" & ir19_15) WHEN selIm = '1' ELSE (OTHERS => '0');
@@ -87,12 +90,13 @@ BEGIN
 		trapValue WHEN selTval = '1' ELSE
 		PC WHEN selPC = '1' ELSE 
 		--(outCSR(31 DOWNTO 13) & curPRV & outCSR(10 DOWNTO 8) & outCSR(3) & outCSR(6 DOWNTO 4) & '0' & outCSR(2 DOWNTO 0)) WHEN machineStatusAlterationPreCSR = '1' ELSE
-		(outCSR(31 DOWNTO 13) & previousPRV & outCSR(10 DOWNTO 8) & outCSR(3) & outCSR(6 DOWNTO 4) & '0' & outCSR(2 DOWNTO 0)) WHEN machineStatusAlterationPreCSR = '1' ELSE --changed luca, MPP is substituted with prevPRV 
+		(outCSR(31 DOWNTO 13) & previousPRV_int & outCSR(10 DOWNTO 8) & outCSR(3) & outCSR(6 DOWNTO 4) & '0' & outCSR(2 DOWNTO 0)) WHEN machineStatusAlterationPreCSR = '1' ELSE --changed luca, MPP is substituted with prevPRV 
 		(outCSR(31 DOWNTO 5) & outCSR(0) & outCSR(3 DOWNTO 1) & '0') WHEN userStatusAlterationPreCSR = '1' ELSE
 		(outCSR(31 DOWNTO 8) & '0' & outCSR(6 DOWNTO 4) & '1' & outCSR(2 DOWNTO 0)) WHEN machineStatusAlterationPostCSR = '1' ELSE
 		(outCSR(31 DOWNTO 5) & '0' & outCSR(3 DOWNTO 1) & '1') WHEN userStatusAlterationPostCSR = '1' ELSE
 		(OTHERS => '0');
 	inCSR <= (preInCSR AND X"00000011") WHEN (mirrorUser = '1' AND mirrorUstatus = '1') ELSE
 		(preInCSR AND X"00000111") WHEN (mirrorUser = '1' AND (mirrorUie = '1' OR mirrorUip = '1')) ELSE preInCSR;
-	previousPRV <= outCSR(12 DOWNTO 11);
+	previousPRV_int <= outCSR(12 DOWNTO 11);
+	previousPRV <= previousPRV_int;
 END ARCHITECTURE behavioral;

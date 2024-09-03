@@ -36,7 +36,7 @@
 
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
-USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- use ieee.std_logic_unsigned.all;
 USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY aftab_barrel_shifter IS
@@ -57,7 +57,7 @@ BEGIN
 		ELSIF (selSh = "10") THEN
 			shOut <= STD_LOGIC_VECTOR (unsigned (shIn) SRL (to_integer (unsigned (nSh))));
 		ELSIF (selSh = "11") THEN
-			shOut <= to_stdlogicvector (to_bitvector (STD_LOGIC_VECTOR (unsigned(shIn))) SRA to_integer (unsigned(nSh)));
+			shOut <= STD_LOGIC_VECTOR (unsigned(shIn) SRL to_integer (unsigned(nSh)));
 		ELSE
 			shOut <= (OTHERS => '0');
 		END IF;

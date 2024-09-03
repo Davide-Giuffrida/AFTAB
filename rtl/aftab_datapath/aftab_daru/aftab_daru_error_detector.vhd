@@ -36,7 +36,9 @@
 
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
-USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- use ieee.std_logic_unsigned.all;
+USE IEEE.NUMERIC_STD.ALL;
+
 ENTITY aftab_daru_error_detector IS
 	GENERIC
 		(len : INTEGER := 32);

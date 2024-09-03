@@ -36,7 +36,8 @@
 
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
-USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- use ieee.std_logic_unsigned.all;
+USE IEEE.NUMERIC_STD.ALL;
 ENTITY aftab_divider_datapath IS
 	GENERIC
 		(len : INTEGER := 33);
@@ -128,7 +129,7 @@ BEGIN
 		inReg  => divisorp,
 		outReg => M);
 	-- Subtractor 33 bit
-	sub   <= Rprev - M;
+	sub   <= std_logic_vector(unsigned(Rprev) - unsigned(M));
 	-- line 1
 	line1 <= Qprev (len - 1 DOWNTO 1) & QQ0;
 	-- Mux 33 bit

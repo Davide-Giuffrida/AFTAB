@@ -38,7 +38,8 @@
 
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
-USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- use ieee.std_logic_unsigned.all;
+
 USE IEEE.numeric_std.ALL;
 ENTITY aftab_iccd IS
 	GENERIC

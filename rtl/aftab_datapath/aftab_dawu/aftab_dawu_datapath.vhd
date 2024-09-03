@@ -36,7 +36,9 @@
 
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
-USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- use ieee.std_logic_unsigned.all;
+USE IEEE.NUMERIC_STD.ALL;
+
 ENTITY aftab_dawu_datapath IS
 	GENERIC
 		(len : INTEGER := 32);
@@ -150,7 +152,7 @@ BEGIN
 		outCnt    => outCnt,
 		coCnt     => OPEN);
 	muxOut <= outReg0 WHEN outCnt(0) = '0' ELSE
-		outReg1 WHEN outCnt(0) = '1';
+		outReg1;
 	coCnt <= '1' WHEN (outCnt(0) = totalByteCnt) ELSE '0';
 	Adder : ENTITY WORK.aftab_opt_adder
 		GENERIC

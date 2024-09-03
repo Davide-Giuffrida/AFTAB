@@ -36,7 +36,8 @@
 
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
-USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- use ieee.std_logic_unsigned.all;
+USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY aftab_tcl IS
 	GENERIC (len: INTEGER := 32);
@@ -51,6 +52,6 @@ ARCHITECTURE behavioral OF aftab_tcl IS
 	SIGNAL aInp : STD_LOGIC_VECTOR (len-1 DOWNTO 0);
 BEGIN
 	aInp <= NOT (aIn)  WHEN (en = '1' ) ELSE aIn;
-	aout <= (aInp + 1) WHEN (en = '1') ELSE aInp;
+	aout <= std_logic_vector(unsigned(aInp) + 1) WHEN (en = '1') ELSE aInp;
 	
 END ARCHITECTURE behavioral;  

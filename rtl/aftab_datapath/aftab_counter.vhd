@@ -36,8 +36,9 @@
 
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
-USE IEEE.STD_LOGIC_ARITH.ALL;
-USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- USE IEEE.STD_LOGIC_ARITH.ALL;
+-- use ieee.std_logic_unsigned.all;
+USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY aftab_counter IS
 	GENERIC (len : INTEGER := 6);
@@ -65,7 +66,7 @@ BEGIN
 			ELSIF (initCnt = '1') THEN
 				temp <= initValue;
 			ELSIF (incCnt = '1' AND coCntp = '0') THEN
-				temp <= (temp + 1);
+				temp <= std_logic_vector(unsigned(temp) + 1);
 			END IF;
 		END IF;
 	END PROCESS;

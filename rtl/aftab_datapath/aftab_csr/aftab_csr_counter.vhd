@@ -37,8 +37,9 @@
 
 LIBRARY IEEE;
 USE IEEE.std_logic_1164.ALL;
-USE IEEE.std_logic_arith.ALL;
-USE IEEE.std_logic_unsigned.ALL;
+-- USE IEEE.std_logic_arith.ALL;
+-- use ieee.std_logic_unsigned.all;
+USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY aftab_csr_counter IS
 	GENERIC (len : INTEGER := 3);
@@ -69,9 +70,9 @@ BEGIN
 			ELSIF (ldCnt = '1') THEN
 				temp <= ldValue;
 			ELSIF (upCnt = '1' AND coCntup = '0') THEN
-				temp <= (temp + 1);
+				temp <= std_logic_vector(unsigned(temp) + 1);
 			ELSIF (dnCnt = '1' AND coCntdn = '0') THEN
-				temp <= (temp - 1);
+				temp <= std_logic_vector(unsigned(temp) - 1);
 			END IF;
 		END IF;
 	END PROCESS;

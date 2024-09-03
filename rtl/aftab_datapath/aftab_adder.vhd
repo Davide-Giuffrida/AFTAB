@@ -36,7 +36,8 @@
 
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
-USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- use ieee.std_logic_unsigned.all;
+USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY aftab_adder IS
 	GENERIC (len : INTEGER := 33);
@@ -51,8 +52,9 @@ END ENTITY aftab_adder;
 --
 ARCHITECTURE behavioral OF aftab_adder IS
 	SIGNAL add : STD_LOGIC_VECTOR (len DOWNTO 0);
+	CONSTANT carry_ext : STD_LOGIC_VECTOR (len - 1 DOWNTO 1) := (OTHERS => '0');
 BEGIN
-	add <= ('0' & A) + ('0' & B) + Cin;
+	add <= std_logic_vector(unsigned('0' & A) + unsigned('0' & B) + unsigned(carry_ext & Cin));
 	addResult <= add(len - 1 DOWNTO 0);
 	carryOut <= add(len);
 END ARCHITECTURE behavioral;

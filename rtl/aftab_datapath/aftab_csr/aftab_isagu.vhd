@@ -36,7 +36,8 @@
 
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
-USE IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- use ieee.std_logic_unsigned.all;
+USE IEEE.NUMERIC_STD.ALL;
 
 ENTITY aftab_isagu IS
 	GENERIC (len : INTEGER := 32);
@@ -54,6 +55,6 @@ ARCHITECTURE Behavioral OF aftab_isagu IS
 BEGIN
 	modeTvec <= tvecBase (1 DOWNTO 0);
 	interruptStartAddressDirect   <= tvecBase;
-	interruptStartAddressVectored <="00" & ( tvecBase(len - 1 DOWNTO 2) + (causeCode & "00"));
+	interruptStartAddressVectored <="00" & std_logic_vector(unsigned(tvecBase(len - 1 DOWNTO 2)) + unsigned(causeCode & "00"));
 									
 END Behavioral;

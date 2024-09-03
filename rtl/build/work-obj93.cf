@@ -1,0 +1,141 @@
+v 4
+file . "../aftab_core.vhd" "910abf5660943edaf9912427993f054f8f01b1ea" "20240903114445.024":
+  entity aftab_core at 37( 1509) + 0 on 102;
+  architecture procedural of aftab_core at 70( 2777) + 0 on 103;
+file . "../aftab_datapath/aftab_datapath.vhd" "db23a96379a783bded448886f4910acbb284ea0c" "20240903114443.522":
+  entity aftab_datapath at 145( 10087) + 0 on 98;
+  architecture behavioral of aftab_datapath at 312( 18276) + 0 on 99;
+file . "../aftab_datapath/aftab_dawu/aftab_dawu_datapath.vhd" "a3af20d593ee1d8a7819003ef08ed85ada3dc596" "20240903114443.423":
+  entity aftab_dawu_datapath at 37( 1557) + 0 on 94;
+  architecture behavioral of aftab_dawu_datapath at 73( 2840) + 0 on 95;
+file . "../aftab_datapath/aftab_dawu/aftab_dawu_controller.vhd" "8fabd070e37d615834d02f3e402f5f0d4445c688" "20240903114443.364":
+  entity aftab_dawu_controller at 37( 1561) + 0 on 90;
+  architecture behavioral of aftab_dawu_controller at 64( 2318) + 0 on 91;
+file . "../aftab_datapath/aftab_daru/aftab_daru_datapath.vhd" "1d129fca7f240553db24ec732211b87f8063024f" "20240903114443.267":
+  entity aftab_daru_datapath at 37( 1556) + 0 on 86;
+  architecture behavioral of aftab_daru_datapath at 77( 3028) + 0 on 87;
+file . "../aftab_datapath/aftab_daru/aftab_daru_controller.vhd" "8f59ed77514a8192ac3efe1017e0b602a7de7037" "20240903114443.198":
+  entity aftab_daru_controller at 37( 1560) + 0 on 82;
+  architecture behavioral of aftab_daru_controller at 66( 2390) + 0 on 83;
+file . "../aftab_datapath/aftab_aau/aftab_su_divider/aftab_su_divider.vhd" "a0dc0f7783f5120627605f7ff33e3d875f46c929" "20240903114443.085":
+  entity aftab_su_divider at 37( 1538) + 0 on 78;
+  architecture behavioral of aftab_su_divider at 58( 2212) + 0 on 79;
+file . "../aftab_datapath/aftab_aau/aftab_su_divider/aftab_divider.vhd" "e238f3835767a4945e423c42f2fa7bb5b345bcc8" "20240903114443.027":
+  entity aftab_divider at 37( 1526) + 0 on 74;
+  architecture behavioral of aftab_divider at 55( 2045) + 0 on 75;
+file . "../aftab_datapath/aftab_aau/aftab_su_divider/aftab_divider_controller.vhd" "fde1161be54b5c5443cee2bef10579800fcbb927" "20240903114442.887":
+  entity aftab_divider_controller at 37( 1551) + 0 on 70;
+  architecture behavioral of aftab_divider_controller at 67( 2398) + 0 on 71;
+file . "../aftab_datapath/aftab_aau/aftab_booth_multiplier/aftab_booth_multiplier_datapath.vhd" "3392d44ff18871c81d6ceead42183409108d0335" "20240903114442.798":
+  entity aftab_booth_multiplier_datapath at 37( 1561) + 0 on 66;
+  architecture behavioral of aftab_booth_multiplier_datapath at 59( 2198) + 0 on 67;
+file . "../aftab_datapath/aftab_aau/aftab_shift_register.vhd" "8db30284276f1c5d894d1ca142735e673cdc7069" "20240903114442.731":
+  entity aftab_shift_register at 37( 1532) + 0 on 62;
+  architecture behavioral of aftab_shift_register at 57( 2085) + 0 on 63;
+file . "../aftab_datapath/aftab_csr/aftab_isagu.vhd" "16a899396a38cdf0e317b75cfa66e8a15325ec12" "20240903114442.662":
+  entity aftab_isagu at 37( 1539) + 0 on 58;
+  architecture behavioral of aftab_isagu at 54( 2107) + 0 on 59;
+file . "../aftab_datapath/aftab_csr/aftab_csr_registers.vhd" "4bc89447a1a433be33d997794c40bff0906af083" "20240903114442.473":
+  entity aftab_csr_registers at 37( 1536) + 0 on 54;
+  architecture behavioral of aftab_csr_registers at 55( 2065) + 0 on 55;
+file . "../aftab_datapath/aftab_csr/aftab_csr_counter.vhd" "ba73575e7e311083d2af0fe859018c67fc1e0bb7" "20240903114442.366":
+  entity aftab_csr_counter at 38( 1624) + 0 on 50;
+  architecture behavioral of aftab_csr_counter at 59( 2143) + 0 on 51;
+file . "../aftab_datapath/aftab_csr/aftab_csr_address_logic.vhd" "86369e2648d52373417c62addb0874c6bae3d1a3" "20240903114442.306":
+  entity aftab_csr_address_logic at 37( 1543) + 0 on 46;
+  architecture behavioral of aftab_csr_address_logic at 55( 1992) + 0 on 47;
+file . "../aftab_datapath/aftab_register_file.vhd" "106ec7f01cd5c477dddc5994ea442a4562cad687" "20240903114442.246":
+  entity aftab_register_file at 37( 1496) + 0 on 42;
+  architecture behavioral of aftab_register_file at 56( 2160) + 0 on 43;
+file . "../aftab_datapath/aftab_llu.vhd" "e25982c749bb229ab3c5ebd5e74e9a3709ca6097" "20240903114442.188":
+  entity aftab_llu at 37( 1521) + 0 on 38;
+  architecture behavioral of aftab_llu at 52( 1940) + 0 on 39;
+file . "../aftab_datapath/aftab_decoder.vhd" "fcbf8bea399303988e0858bf61c05327cdd5e82d" "20240903114442.141":
+  entity aftab_decoder at 37( 1493) + 0 on 34;
+  architecture behavioral of aftab_decoder at 48( 1729) + 0 on 35;
+file . "../aftab_datapath/aftab_adder.vhd" "bfa53a9b6bd1a9607fe95a7855d590c94dade971" "20240903114442.083":
+  entity aftab_adder at 37( 1474) + 0 on 30;
+  architecture behavioral of aftab_adder at 53( 1895) + 0 on 31;
+file . "../aftab_datapath/aftab_one_bit_register.vhd" "c63e1ed4ec0aca279e53034ace465de94894d658" "20240903114442.039":
+  entity aftab_one_bit_register at 37( 1523) + 0 on 26;
+  architecture behavioral of aftab_one_bit_register at 51( 1885) + 0 on 27;
+file . "../aftab_datapath/aftab_full_adder.vhd" "9b997cc342c3a84e66e921b323e28051beb4136a" "20240903114442.004":
+  entity aftab_full_adder at 37( 1516) + 0 on 22;
+  architecture gate_level of aftab_full_adder at 49( 1753) + 0 on 23;
+file . "../aftab_datapath/aftab_counter.vhd" "8205b1de3efec1fac2bbb60f03c1f850a31536cc" "20240903114441.937":
+  entity aftab_counter at 37( 1482) + 0 on 18;
+  architecture behavioral of aftab_counter at 55( 1962) + 0 on 19;
+file . "../aftab_datapath/aftab_multiplexer.vhd" "4e387abd07080fe49474167a2166f560c06755e7" "20240903114441.876":
+  entity aftab_multiplexer at 37( 1553) + 0 on 14;
+  architecture procedural of aftab_multiplexer at 51( 1906) + 0 on 15;
+file . "../constants.vhd" "f1c4c0236481951f41c314f83adbc0e6d3e3a3c6" "20240903114441.836":
+  package constants at 1( 0) + 0 on 11;
+file . "../aftab_datapath/aftab_register.vhd" "8c471566d0ff7efccd5def79c91c8554554d5810" "20240903114441.854":
+  entity aftab_register at 37( 1520) + 0 on 12;
+  architecture behavioral of aftab_register at 56( 1952) + 0 on 13;
+file . "../aftab_datapath/aftab_comparator.vhd" "a9177fd0a2c05c619fb35c8c5efa1ae3e089d0c8" "20240903114441.897":
+  entity aftab_comparator at 37( 1524) + 0 on 16;
+  architecture behavioral of aftab_comparator at 54( 2064) + 0 on 17;
+file . "../aftab_datapath/aftab_isseu.vhd" "9af7ffbbcbe52667ec79de2ff4d0cea59bdd753b" "20240903114441.965":
+  entity aftab_isseu at 37( 1563) + 0 on 20;
+  architecture behavioral of aftab_isseu at 65( 2324) + 0 on 21;
+file . "../aftab_datapath/aftab_half_adder.vhd" "55e9d7fb9aae0300149f02d640e0a2f3db7c8d49" "20240903114442.022":
+  entity aftab_half_adder at 38( 1495) + 0 on 24;
+  architecture rtl of aftab_half_adder at 51( 1732) + 0 on 25;
+file . "../aftab_datapath/aftab_opt_adder.vhd" "ec0bdb920a84e905a9b51ebf8bcb69776368e882" "20240903114442.056":
+  entity aftab_opt_adder at 37( 1484) + 0 on 28;
+  architecture behavioral of aftab_opt_adder at 48( 1758) + 0 on 29;
+file . "../aftab_datapath/aftab_adder_subtractor.vhd" "d4a024216c22469cb689c404a3f4acf489c179aa" "20240903114442.113":
+  entity aftab_adder_subtractor at 37( 1538) + 0 on 32;
+  architecture behavioral of aftab_adder_subtractor at 54( 2009) + 0 on 33;
+file . "../aftab_datapath/aftab_barrel_shifter.vhd" "4b92f7abfcf2779ee124b7a8cce35d2678c83675" "20240903114442.163":
+  entity aftab_barrel_shifter at 37( 1535) + 0 on 36;
+  architecture behavioral of aftab_barrel_shifter at 52( 1958) + 0 on 37;
+file . "../aftab_datapath/aftab_sulu.vhd" "d5387c73315175e0024a40860c2bce57629fe167" "20240903114442.218":
+  entity aftab_sulu at 37( 1532) + 0 on 40;
+  architecture behavioral of aftab_sulu at 51( 1893) + 0 on 41;
+file . "../aftab_datapath/aftab_csr/aftab_csr_address_ctrl.vhd" "0a7994f85a3cc2c9e4d538e6a66edf7d6e133b35" "20240903114442.283":
+  entity aftab_csr_address_ctrl at 37( 1574) + 0 on 44;
+  architecture behavioral of aftab_csr_address_ctrl at 50( 1811) + 0 on 45;
+file . "../aftab_datapath/aftab_csr/aftab_csr_addressing_decoder.vhd" "8014cf44ee989ed97581961ee55d4a17a568c702" "20240903114442.334":
+  entity aftab_csr_addressing_decoder at 37( 1536) + 0 on 48;
+  architecture functional of aftab_csr_addressing_decoder at 48( 1804) + 0 on 49;
+file . "../aftab_datapath/aftab_csr/aftab_csr_isl.vhd" "8b15e3c068986f6dc85ba459ce623add2f887e29" "20240903114442.399":
+  entity aftab_csr_isl at 37( 1520) + 0 on 52;
+  architecture behavioral of aftab_csr_isl at 77( 3307) + 0 on 53;
+file . "../aftab_datapath/aftab_csr/aftab_iccd.vhd" "459ee9bad90bbadf8bc07a9764d5568c5b86511f" "20240903114442.499":
+  entity aftab_iccd at 39( 1607) + 0 on 56;
+  architecture behavioral of aftab_iccd at 73( 2802) + 0 on 57;
+file . "../aftab_datapath/aftab_csr/aftab_register_bank.vhd" "99b74f02c17530287dda274edd7dbf47d72736cb" "20240903114442.693":
+  entity aftab_register_bank at 37( 1504) + 0 on 60;
+  architecture behavioral of aftab_register_bank at 66( 2462) + 0 on 61;
+file . "../aftab_datapath/aftab_aau/aftab_booth_multiplier/aftab_booth_multiplier_controller.vhd" "23a91d1f944171a936215a3b7cc3bbfa81350185" "20240903114442.757":
+  entity aftab_booth_multiplier_controller at 37( 1529) + 0 on 64;
+  architecture behavioral of aftab_booth_multiplier_controller at 64( 2213) + 0 on 65;
+file . "../aftab_datapath/aftab_aau/aftab_booth_multiplier/aftab_booth_multiplier.vhd" "7d0a249cf0f4a2c678f1a847ef42c28151e9a1a6" "20240903114442.861":
+  entity aftab_booth_multiplier at 37( 1536) + 0 on 68;
+  architecture behavioral of aftab_booth_multiplier at 55( 2053) + 0 on 69;
+file . "../aftab_datapath/aftab_aau/aftab_su_divider/aftab_divider_datapath.vhd" "3babdfe71aeea0d84a611f097f6dd4c880e81371" "20240903114442.954":
+  entity aftab_divider_datapath at 37( 1547) + 0 on 72;
+  architecture behavioral of aftab_divider_datapath at 69( 2521) + 0 on 73;
+file . "../aftab_datapath/aftab_aau/aftab_su_divider/aftab_tcl.vhd" "f796fd1fba539d77c3406b35656ae98d8e5212f0" "20240903114443.059":
+  entity aftab_tcl at 37( 1565) + 0 on 76;
+  architecture behavioral of aftab_tcl at 51( 1890) + 0 on 77;
+file . "../aftab_datapath/aftab_aau/aftab_aau.vhd" "257c6c76f1c4e622acdaf6b6875da22d9b77b086" "20240903114443.135":
+  entity aftab_aau at 37( 1529) + 0 on 80;
+  architecture behavioral of aftab_aau at 64( 2369) + 0 on 81;
+file . "../aftab_datapath/aftab_daru/aftab_daru_error_detector.vhd" "e6c91052e57472885f5067811e1cf17772e61ab1" "20240903114443.238":
+  entity aftab_daru_error_detector at 37( 1530) + 0 on 84;
+  architecture behavioral of aftab_daru_error_detector at 56( 2033) + 0 on 85;
+file . "../aftab_datapath/aftab_daru/aftab_daru.vhd" "18dfe77f01eca9b630f4c79effedf60fd0644faf" "20240903114443.332":
+  entity aftab_daru at 37( 1495) + 0 on 88;
+  architecture behavioral of aftab_daru at 63( 2402) + 0 on 89;
+file . "../aftab_datapath/aftab_dawu/aftab_dawu_error_detector.vhd" "43f75b15a4d6cd35a4b9a3266546197d2d3d6c74" "20240903114443.398":
+  entity aftab_dawu_error_detector at 38( 1546) + 0 on 92;
+  architecture behavioral of aftab_dawu_error_detector at 55( 1971) + 0 on 93;
+file . "../aftab_datapath/aftab_dawu/aftab_dawu.vhd" "e67a2c802b0e7752e0d36dc910c9de960fb1fbcc" "20240903114443.486":
+  entity aftab_dawu at 37( 1496) + 0 on 96;
+  architecture behavioral of aftab_dawu at 66( 2417) + 0 on 97;
+file . "../aftab_controller.vhd" "df1e0eacc92958c98c3984f340ea9b51ed8d4ec1" "20240903114444.706":
+  entity aftab_controller at 51( 2511) + 0 on 100;
+  architecture behavioral of aftab_controller at 199( 9110) + 0 on 101;
