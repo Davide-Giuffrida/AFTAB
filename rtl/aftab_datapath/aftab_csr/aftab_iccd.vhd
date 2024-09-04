@@ -157,7 +157,7 @@ BEGIN
 			-- checking which exception has been thrown
 			IF (tempInstrAddrMisaligned = '1') THEN
 				causeCode <= '0' & STD_LOGIC_VECTOR(to_unsigned(0, len - 1));
-			ELSIF    (tempIllegalInstr = '1') THEN
+			ELSIF    (tempIllegalInstr = '1' or tempDividedByZero = '1') THEN
 				causeCode <= '0' & STD_LOGIC_VECTOR(to_unsigned(2, len - 1));
 			ELSIF (tempStoreAddrMisaligned = '1') THEN
 				causeCode <= '0' & STD_LOGIC_VECTOR(to_unsigned(6, len - 1));
@@ -236,7 +236,7 @@ BEGIN
 				delegationReg <= "00";
 			ELSIF (tempLoadAddrMisaligned = '1' AND user = '1' AND medelegCSR(4) = '1') THEN
 				delegationReg <= "00";
-			ELSIF (tempDividedByZero = '1' AND user = '1' AND medelegCSR(10) = '1') THEN
+			ELSIF (tempDividedByZero = '1' AND user = '1' AND medelegCSR(2) = '1') THEN
 				delegationReg <= "00";
 			ELSIF (tempEcallFlag = '1' AND user = '1' AND medelegCSR(11) = '1') THEN
 				delegationReg <= "00";

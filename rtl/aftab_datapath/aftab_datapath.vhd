@@ -219,6 +219,7 @@ ENTITY aftab_datapath IS
 		
 		-- func3 field of the instruction currently in write-back
 		WB_func3					   : OUT STD_LOGIC_VECTOR (2 DOWNTO 0);
+		WB_mretUretBar				   : OUT STD_LOGIC;
 
 		-- operation complete signals (and related signals to notify the CU about the instruction which reside in the pipeline)
 		completedDAWU_def              : OUT STD_LOGIC;
@@ -701,6 +702,7 @@ ARCHITECTURE behavioral OF aftab_datapath IS
 	SIGNAL completedDARU1_def_int		 : STD_LOGIC;
 	SIGNAL exceptionRaise_int			 : STD_LOGIC;
 	SIGNAL validAccessCSR_int			 : STD_LOGIC;
+	SIGNAL completedAAU_aau				 : STD_LOGIC;
 
 BEGIN
 	-- outputs assigned to the dummy internal signals
@@ -727,7 +729,7 @@ BEGIN
 	-- ldPC is given by the pipeline enabled signal, but if there are mispredictions on branches you have to clear F2GI
 	-- GI2D_rst is raised when there are mispredictions, exceptions or interrupts
 	-- FIXME: REPLACED DARU1_en with DARU1_en_def
-	ldPC <= (DARU1_en_def AND NOT(GI2D_rst_def)) OR GI2D_rst;
+	ldPC <= (DARU1_en_def AND NOT(GI2D_rst_def)) OR GI2D_rst OR selMepc_CSR;
 
 	-- PC register
 	regPC : ENTITY WORK.aftab_register
@@ -763,7 +765,8 @@ BEGIN
 	-- if // (vectored) --> interruptStartAddressVectored
 	-- TODO: MAKE SURE THAT EVERYTHING WORKS CORRECTLY, SO THAT IT IS POSSIBLE TO FORCE A VALUE IN THE PC.
 	inPC <= E2M_ALU_res_curr WHEN branch_taken_int = '1' ELSE -- branch_taken from BPU in memory stage
-		D2E_outCSR_next WHEN selMepc_CSR = '1' ELSE -- driven from exception handling phase
+		-- D2E_outCSR_next WHEN selMepc_CSR = '1' ELSE -- driven from exception handling phase
+		outCSR_write_val WHEN selMepc_CSR = '1' ELSE -- driven from exception handling phase
 		interruptStartAddressDirect WHEN selInterruptAddressDirect = '1' ELSE -- driven from interrupt handling phase
 		interruptStartAddressVectored WHEN selInterruptAddressVectored = '1' ELSE -- as before 
 		inc4PC;
@@ -1143,10 +1146,12 @@ BEGIN
 		resAAU1           => resAAH,
 		resAAU2           => resAAL,
 		dividedByZeroFlag => dividedByZeroFlag, -- the division is never started, so the flag remains on while the instruction is kept in EX
-		completeAAU       => completedAAU_int); -- to be sent to the CU to build the D2E_en
+		completeAAU       => completedAAU_aau); -- to be sent to the CU to build the D2E_en
+
+	completedAAU_int <= completedAAU_aau;
 
 	-- flag that is set when the operation in EX relies on AAU for computation
-	is_AAU_used <= E_startMultiplyAAU OR E_startDivideAAU;
+	is_AAU_used <= E_startMultiplyAAU OR (E_startDivideAAU AND NOT dividedByZeroFlag);
 	
 	-- FLAG TO PRESERVE completedAAU IN CASE THE PIPELINE IS STALLED (THE RESULT IS NOT LOST)
 	completedAAU_register: PROCESS (clk, rst) BEGIN
@@ -1374,7 +1379,8 @@ BEGIN
 
 	-- exceptionHandling and interruptHandling are "Mealy set" by Normal and "Moore set" by int/ex Handling states. 
 	-- TODO: CHECK IF IT IS OK USING exception/interruptRaise IN THIS PART OF THE CODE
-	M2WB_rst_def <= M2WB_rst OR (NOT(M2WB_en) AND instructionDone_int AND NOT(exceptionRaise_int) AND NOT(interruptRaise_int));
+	-- M2WB_rst_def <= M2WB_rst OR (NOT(M2WB_en) AND instructionDone_int AND NOT(exceptionRaise_int) AND NOT(interruptRaise_int));
+	M2WB_rst_def <=  M2WB_rst OR (NOT(WB_ret_from_epc) AND NOT(M2WB_en) AND instructionDone_int AND NOT(exceptionRaise_int) AND NOT(interruptRaise_int));
 
 	-- select address to be sent to memory between the one produced by DARU and the one produced by DAWU
 	memAddr2 <= memAddrDARU2 WHEN readMemDARU2_int = '1' ELSE memAddrDAWU;
@@ -1524,7 +1530,7 @@ BEGIN
 	-- It could be either the PC value from write-back or the one from memory (in case there is a store in memory and we
 	-- are handling an interrupt). Before reading the value from memory we have to make sure that the store is concluded,
 	-- so an additional state waitForStore is needed when handling interrupts.
-	CSR_PC <= M2WB_PC_plus4_curr WHEN PC_from_WB = '0' ELSE E2M_PC_plus4_curr;
+	CSR_PC <= M2WB_PC_curr WHEN PC_from_WB = '0' ELSE E2M_PC_plus4_curr;
 
 	-- outCSR value to be written in CSR RB: the D2E_outCSR_curr stores the value directly read from the register bank,
 	-- while the M2WB_outCSR_curr stores the one which propagated through the pipeline coming from DEC.
@@ -2408,6 +2414,7 @@ BEGIN
 	WB_isCSRInstruction						<= M2WB_ctrl_word_curr(59);
 	-- instruction fields
 	WB_func3           						<= M2WB_instr_curr(14 DOWNTO 12);
+	WB_mretUretBar							<= M2WB_instr_curr(29);
 	WB_func7           						<= M2WB_instr_curr(31 DOWNTO 25);
 	WB_func12          						<= M2WB_instr_curr(31 DOWNTO 20);
 	WB_opcode          						<= M2WB_instr_curr(6 DOWNTO 0);

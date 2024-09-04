@@ -85,6 +85,7 @@ ENTITY aftab_controller IS
 
 		-- func3 field of the instruction currently in write-back (needed for CSR instructions)
 		WB_func3					   : IN STD_LOGIC_VECTOR (2 DOWNTO 0);
+		WB_mretUretBar				   : IN STD_LOGIC;
 		
 		-- control word
 		writeRegFile                   : OUT STD_LOGIC;
@@ -221,7 +222,7 @@ BEGIN
 	func7           <= IR(31 DOWNTO 25);
 	func12          <= IR(31 DOWNTO 20);
 	opcode          <= IR(6 DOWNTO 0);
-	mretOrUretBar   <= IR(29);
+	mretOrUretBar   <= WB_mretUretBar;
 	StateTransition : PROCESS (p_state, completedDARU1, completedDARU2, is_AAU_used, instructionDone,
 							   completedDAWU, completedAAU, opcode, func3, func7, 
 							   func12, exceptionRaise, interruptRaise, 

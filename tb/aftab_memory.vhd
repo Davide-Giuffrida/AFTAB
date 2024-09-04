@@ -112,7 +112,7 @@ RW : PROCESS(rst, clk, writeMem2, readMem1, readMem2, addressBus1, addressBus2, 
 			ready2 <= '1';
 			-- Load memory content from file
 			mem <= (OTHERS => (OTHERS => '0'));
-			FILE_OPEN(err_check, f, ("./slm_files/spi_stim.txt"), READ_MODE);
+			FILE_OPEN(err_check, f, ("/home/davide/tesi/aftab/tb/slm_files/spi_stim.txt"), READ_MODE);
 			IF err_check = open_ok THEN
 				WHILE NOT ENDFILE (f) LOOP
 					READLINE (f, memline);
@@ -179,6 +179,11 @@ RW : PROCESS(rst, clk, writeMem2, readMem1, readMem2, addressBus1, addressBus2, 
 					dataOut2(15 DOWNTO 8) <= (OTHERS => '0');
 				END IF;
 			END IF;
+
+			IF (adr = "0011100111000") THEN
+				assert false report "test done" severity failure;
+			END IF;
+			
 		END IF;
 		IF writeMem2 = '1' and falling_edge(clk) THEN
 			IF UNSIGNED(addressBus2) > end_iram THEN 

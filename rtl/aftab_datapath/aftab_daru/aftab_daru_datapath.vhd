@@ -95,7 +95,8 @@ BEGIN
 		(
 			clk    => clk,
 			rst    => rst,
-			zero   => zeroAddr,
+			-- zero   => zeroAddr,
+			zero   => '0',
 			load   => ldAddr,
 			inReg  => addrIn,
 			outReg => readAddr);

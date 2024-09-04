@@ -220,6 +220,7 @@ ARCHITECTURE procedural OF aftab_core IS
 	SIGNAL hazM							  : STD_LOGIC;	
 	SIGNAL WB_isCSRInstruction			  : STD_LOGIC;
 	SIGNAL WB_validAccessCSR			  : STD_LOGIC;
+	SIGNAL WB_mretUretBar				  : STD_LOGIC;
 
 BEGIN
 	datapathAFTAB : ENTITY WORK.aftab_datapath
@@ -294,6 +295,7 @@ BEGIN
 			
 			-- func3 field of the instruction currently in write-back
 			WB_func3					   => WB_func3,
+			WB_mretUretBar				   => WB_mretUretBar,
 
 			-- operation complete signals (and related signals to notify the CU about the instruction which reside in the pipeline)
 			completedDAWU_def              => completedDAWU,
@@ -413,6 +415,7 @@ BEGIN
 
 			-- func3 field of the instruction currently in write-back (needed for CSR instructions)
 			WB_func3					   => WB_func3,
+			WB_mretUretBar				   => WB_mretUretBar,
 			
 			-- control word
 			writeRegFile                   => writeRegFile,

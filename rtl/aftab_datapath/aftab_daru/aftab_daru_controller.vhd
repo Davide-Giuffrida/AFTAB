@@ -120,6 +120,7 @@ BEGIN
 				ldNumBytes  <= startDARU;
 				initReading <= startDARU;
 				zeroAddr	<= NOT (startDARU); -- added to avoid blocking an excepting instruction
+				-- zeroAddr	<= NOT (startDARU); -- added to avoid blocking an excepting instruction
 			WHEN waitforMemready =>
 				selldEn    <= memReady;
 				enableData <= memReady;
