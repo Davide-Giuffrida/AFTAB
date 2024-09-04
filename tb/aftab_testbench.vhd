@@ -139,7 +139,30 @@ BEGIN
 		WAIT FOR 40 ns;
 		rst <= '0';
 		-- uncomment this and set at proper time if you want to set interrupts signals on at some point
-		--WAIT FOR 1700 ns;
+		WAIT FOR 100000 ns;
+		machineExternalInterrupt <= '1';
+		WAIT FOR 10000 ns;
+		machineExternalInterrupt <= '0';
+		WAIT FOR 30000 ns;
+		userExternalInterrupt <= '1';
+		WAIT FOR 10000 ns;
+		userExternalInterrupt <= '0';
+		WAIT FOR 30000 ns;
+		userSoftwareInterrupt <= '1';
+		WAIT FOR 10000 ns;
+		userSoftwareInterrupt <= '0';
+		WAIT FOR 30000 ns;
+		userTimerInterrupt <= '1';
+		WAIT FOR 10000 ns;
+		userTimerInterrupt <= '0';
+		WAIT FOR 30000 ns;
+		machineSoftwareInterrupt <= '1';
+		WAIT FOR 10000 ns;
+		machineSoftwareInterrupt <= '0';
+		WAIT FOR 30000 ns;
+		machineTimerInterrupt <= '1';
+		WAIT FOR 10000 ns;
+		machineTimerInterrupt <= '0';
 		--platformInterruptSignals <= X"0001";
 		WAIT;
 

@@ -703,6 +703,7 @@ ARCHITECTURE behavioral OF aftab_datapath IS
 	SIGNAL exceptionRaise_int			 : STD_LOGIC;
 	SIGNAL validAccessCSR_int			 : STD_LOGIC;
 	SIGNAL completedAAU_aau				 : STD_LOGIC;
+	SIGNAL WB_ret_from_epc_int			 : STD_LOGIC;
 
 BEGIN
 	-- outputs assigned to the dummy internal signals
@@ -719,6 +720,7 @@ BEGIN
 	completedDARU1_def <= completedDARU1_def_int;
 	exceptionRaise <= exceptionRaise_int;
 	validAccessCSR <= validAccessCSR_int;
+	WB_ret_from_epc <= WB_ret_from_epc_int;
 
 	-- NEW DATAPATH
 	
@@ -1380,7 +1382,7 @@ BEGIN
 	-- exceptionHandling and interruptHandling are "Mealy set" by Normal and "Moore set" by int/ex Handling states. 
 	-- TODO: CHECK IF IT IS OK USING exception/interruptRaise IN THIS PART OF THE CODE
 	-- M2WB_rst_def <= M2WB_rst OR (NOT(M2WB_en) AND instructionDone_int AND NOT(exceptionRaise_int) AND NOT(interruptRaise_int));
-	M2WB_rst_def <=  M2WB_rst OR (NOT(WB_ret_from_epc) AND NOT(M2WB_en) AND instructionDone_int AND NOT(exceptionRaise_int) AND NOT(interruptRaise_int));
+	M2WB_rst_def <=  M2WB_rst OR (NOT(WB_ret_from_epc_int) AND NOT(M2WB_en) AND instructionDone_int AND NOT(exceptionRaise_int) AND NOT(interruptRaise_int));
 
 	-- select address to be sent to memory between the one produced by DARU and the one produced by DAWU
 	memAddr2 <= memAddrDARU2 WHEN readMemDARU2_int = '1' ELSE memAddrDAWU;
@@ -2405,7 +2407,7 @@ BEGIN
 	WB_selCSRAddrFromInst					<= M2WB_ctrl_word_curr(48);
 	WB_forced_RB_read						<= M2WB_ctrl_word_curr(49);
 	WB_inst_type							<= M2WB_ctrl_word_curr(52 DOWNTO 50); -- 3 bits
-	WB_ret_from_epc							<= M2WB_ctrl_word_curr(53);
+	WB_ret_from_epc_int						<= M2WB_ctrl_word_curr(53);
 	WB_selALU								<= M2WB_ctrl_word_curr(54);
 	WB_selPC4								<= M2WB_ctrl_word_curr(55);
 	WB_selMem								<= M2WB_ctrl_word_curr(56);
