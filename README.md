@@ -5,7 +5,7 @@
 A pipelined version of the AFTAB core described below. The implementation details are provided as comments within the
 code, showing where the original functionalities have been modified to ensure proper integration with the new ones.
 A brief [summary](modifications.txt) of the new features has been written as well, in order to highlight the ideas
-whcih drove the development process and how they were refined over time.
+whcih drove the development process and how they were refined over time. The original project can be found [here](https://github.com/RHESGroup/aftab).
 
 # CNL_RISC-V - AFTAB
 ## 32-bit RV32IM RISC-V core 
