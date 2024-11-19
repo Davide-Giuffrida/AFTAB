@@ -1,5 +1,12 @@
 <img src="logo.png" style="color:#ffffff" width="400px" />
 
+# pipelined AFTAB
+
+A pipelined version of the AFTAB core described below. The implementation details are provided as comments within the
+code, showing where the original functionalities have been modified to ensure proper integration with the new ones.
+A brief [summary](AFTAB/modifications.txt) of the new features has been written as well, in order to highlight the ideas
+whcih drove the development process and how they were refined over time.
+
 # CNL_RISC-V - AFTAB
 ## 32-bit RV32IM RISC-V core 
 
